@@ -6,7 +6,7 @@
 // Description: Most of this code is taking from the Laravel "Fluent" Auth Driver.
 //
 
-namespace Cloudmanic\Libraries;
+namespace Cloudmanic\WarChest\Libraries;
 
 use Laravel\Database as DB;
 use Laravel\Config as Config;

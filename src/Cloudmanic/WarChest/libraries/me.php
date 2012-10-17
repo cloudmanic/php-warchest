@@ -5,7 +5,7 @@
 // Date: 10/7/2012
 //
 
-namespace Cloudmanic\Libraries;
+namespace Cloudmanic\WarChest\Libraries;
 
 class Me
 {

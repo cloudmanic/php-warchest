@@ -5,7 +5,7 @@
 // Date: 10/13/2012
 //
 
-namespace Cloudmanic\libraries;
+namespace Cloudmanic\WarChest\Libraries;
 
 class Start
 {
