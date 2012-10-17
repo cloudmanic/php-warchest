@@ -1,0 +1,7 @@
+{
+    "name": "cloudmanic/php-warchest",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-0": {"Cloudmanic\\WarChest": "src/"}
+    }
+}
