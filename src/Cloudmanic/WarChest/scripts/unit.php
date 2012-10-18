@@ -9,9 +9,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 'On');
 ini_set('display_startup_errors', 'On');
 
+include_once '../../../../../../../vendor/autoload.php';
 include_once './libs/curl.php';
-include_once '../api-clients/skyclerk/v2/Skyclerk.php';
-include_once '../api-clients/evermanic/v1/Evermanic.php';
 
 class Cloudmanic_Unit_Tests
 {
@@ -19,7 +18,11 @@ class Cloudmanic_Unit_Tests
 	protected $_called_class = '';
 	protected $curl = '';
 	private static $_configs = array();
-	private static $_paths = array('../../tests/system-pre/*', '../../tests/api/*', '../../tests/system-post/*');
+	private static $_paths = array(
+		'../../../../../../../tests/system-pre/*', 
+		'../../../../../../../tests/api/*', 
+		'../../../../../../../tests/system-post/*'
+	);
 	
 	//
 	// Construct.
