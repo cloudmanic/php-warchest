@@ -14,6 +14,7 @@ class Deploy
 	public $remote_dir = '/var/www/dev.elevationfit.com';
 	public $ssh_port = '9022';
 	public $app_path = '../';
+	public $laravel_migrate = true;
 
 	//
 	// Construct.
@@ -44,7 +45,14 @@ class Deploy
 		foreach($this->hosts AS $key => $row)
 		{
 			echo "\n#### Deploying $row #####\n";
-			echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php scripts/composer.phar update'") . "\n\n";
+			
+			if($this->laravel_migrate)
+			{
+				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php artisan migrate && php scripts/composer.phar update'") . "\n\n";
+			} else
+			{
+				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php scripts/composer.phar update'") . "\n\n";				
+			}
 		}
 		
 		// Done deploying
