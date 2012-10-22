@@ -16,8 +16,8 @@ class Start
 	public static function laravel_init()
 	{
 		// Load AutoLoad Aliases
-		\Laravel\Autoloader::alias('\Cloudmanic\Libraries\LaravelAuth', 'LaravelAuth');
-		\Laravel\Autoloader::alias('\Cloudmanic\Libraries\Me', 'Me');
+		\Laravel\Autoloader::alias('\Cloudmanic\WarChest\Libraries\LaravelAuth', 'LaravelAuth');
+		\Laravel\Autoloader::alias('\Cloudmanic\WarChest\Libraries\Me', 'Me');
 		
 		// Set Api auth filter.
 		\Laravel\Routing\Route::filter('api_auth', function() 
@@ -37,6 +37,27 @@ class Start
 					return \Laravel\Response::json($data);			
 				}
 			}
+		});
+		
+		// Build a micro for activating a class or not. We use this in a main navigation
+		// to set the html class to active or not.
+		\Laravel\HTML::macro('is_active', function($name, $home = false, $class = 'active')
+		{
+			$base = \Laravel\URI::segment(1);
+			
+			// Is the the default route?
+			if($home && (empty($base)))
+			{
+				return $class;
+			}
+			
+			// Compare the segment.
+			if($base == $name)
+			{
+				return $class;
+			}
+			
+			return '';
 		});
 	}
 }
