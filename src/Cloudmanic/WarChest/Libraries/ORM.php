@@ -1,5 +1,7 @@
 <?php
-namespace CMS\Libraries;
+
+namespace Cloudmanic\WarChest\Libraries;
+
 use \PDO;
 
 /**
