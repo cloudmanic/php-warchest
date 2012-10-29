@@ -125,6 +125,20 @@ class Cloudmanic_Unit_Tests
 	}	
 	
 	//
+	// Test to see if an array index does not exists.
+	//
+	public static function assert_array_no_key($data, $key, $msg)
+	{
+		if(! isset($data[$key]))
+		{
+			Cloudmanic_Unit_Tests::log_status('ok', $msg);
+		} else
+		{
+			Cloudmanic_Unit_Tests::log_status('fail', $msg);
+		}
+	}	
+	
+	//
 	// Set a config value.
 	//
 	public static function set_config($key, $value)
