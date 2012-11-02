@@ -19,24 +19,14 @@ class Start
 		\Laravel\Autoloader::alias('\Cloudmanic\WarChest\Libraries\LaravelAuth', 'LaravelAuth');
 		\Laravel\Autoloader::alias('\Cloudmanic\WarChest\Libraries\Me', 'Me');
 		
+		// Extend the Laravel Auth library to use our own custom driver.
+		\Auth::extend('cloudmanic_auth', function () {
+		  return new LaravelAuth();
+		});
+		
 		// Set Api auth filter.
-		\Laravel\Routing\Route::filter('api_auth', function() 
-		{
-			// Check the authenication of the request.
-			if(! CloudAuth::sessioninit())
-			{
-				// Redirect or display error?	
-				$rt = CloudAuth::get_redirect();
-				if(! empty($rt))
-				{
-					return \Laravel\Redirect::to($rt);
-				} else
-				{
-					$data = array('status' => 0, 'errors' => array());
-					$data['errors'][] = CloudAuth::get_error();
-					return \Laravel\Response::json($data);			
-				}
-			}
+		\Laravel\Routing\Route::filter('api_auth', function() {	
+			return CloudAuth::sessioninit();
 		});
 		
 		// Build a micro for activating a class or not. We use this in a main navigation
