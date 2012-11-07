@@ -48,7 +48,7 @@ class ApiController extends \Laravel\Routing\Controller
 		
 		$m = $this->model;
 		$data['Id'] = $m::insert(Input::get());	
-		return $this->_response($data);
+		return $this->api_response($data);
 	}
 	 
 	//
@@ -63,7 +63,7 @@ class ApiController extends \Laravel\Routing\Controller
 		
 		$m = $this->model;
 		$m::delete(Input::get('Id'));	
-		return $this->_response(array());
+		return $this->api_response(array());
 	}
 	 
 	//
@@ -78,7 +78,7 @@ class ApiController extends \Laravel\Routing\Controller
 		
 		$m = $this->model;
 		$data = $m::get();	
-		return $this->_response($data);
+		return $this->api_response($data);
 	}
 	
 	//
@@ -95,20 +95,24 @@ class ApiController extends \Laravel\Routing\Controller
 		$m = $this->model;
 		if($data = $m::get_by_id($id))
 		{	
-			return $this->_response($data);
+			return $this->api_response($data);
 		} else
 		{
-			return $this->_response(array(), 0, array('Entry not found.'));
+			return $this->api_response(array(), 0, array('Entry not found.'));
 		}
 	}
 	
 	//
 	// Return a response based on the get "format" param.
 	//
-	protected function _response($data, $status = 1, $errors = NULL)
+	public function api_response($data = null, $status = 1, $errors = NULL)
 	{
+		// Setup the return array
+		$rt = array();
 		$rt['status'] = $status;
-		$rt['data'] = $data;
+		$rt['data'] = (! is_null($data)) ? $data : array();
+		$rt['filtered'] = 0;
+		$rt['total'] = 0;
 		
 		// Set errors.
 		if(is_null($errors))
@@ -116,7 +120,15 @@ class ApiController extends \Laravel\Routing\Controller
 			$rt['errors'] = array();
 		} else
 		{
-			$rt['errors'] = $errors;
+			// Format the errors
+			foreach($errors AS $key => $row)
+			{
+				// You can have more than one error per field.
+				foreach($row AS $key2 => $row2)
+				{
+					$rt['errors'][] = array('field' => $key, 'error' => $row2);
+				}
+			}
 		}
 		
 		switch(Input::get('format'))
@@ -138,7 +150,7 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	private function _method_not_allowed()
 	{
-		return $this->_response(array(), 0, array('Method not allowed.'));
+		return $this->api_response(array(), 0, array('Method not allowed.'));
 	}
 	
 	//

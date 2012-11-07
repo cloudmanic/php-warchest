@@ -22,7 +22,7 @@ class Me
 	//
 	// Get logged in user.
 	//
-	public static function get()
+	public static function get($key)
 	{
 		return self::$data;
 	}
