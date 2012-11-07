@@ -39,7 +39,7 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	// Insert.
 	//
-	public function post_insert()
+	public function post_create()
 	{		
 		if($this->_is_allowed(__FUNCTION__))
 		{
