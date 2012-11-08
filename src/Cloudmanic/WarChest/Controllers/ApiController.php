@@ -48,13 +48,31 @@ class ApiController extends \Laravel\Routing\Controller
 		
 		$m = $this->model;
 		$data['Id'] = $m::insert(Input::get());	
+		
+		return $this->api_response($data);
+	}
+	
+	//
+	// Update.
+	//
+	public function post_update($id)
+	{				
+		if($this->_is_allowed(__FUNCTION__))
+		{
+			return $this->_method_not_allowed();
+		}
+		
+		$m = $this->model; 
+		$data['Id'] = $id;
+		$m::update(Input::get(), $id);	
+		
 		return $this->api_response($data);
 	}
 	 
 	//
-	// Delete.
+	// Delete
 	//
-	public function post_delete()
+	public function get_delete($id)
 	{		
 		if($this->_is_allowed(__FUNCTION__))
 		{
@@ -62,7 +80,7 @@ class ApiController extends \Laravel\Routing\Controller
 		}
 		
 		$m = $this->model;
-		$m::delete(Input::get('Id'));	
+		$m::delete($id);	
 		return $this->api_response(array());
 	}
 	 
@@ -107,6 +125,21 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	public function api_response($data = null, $status = 1, $errors = NULL)
 	{
+		// First we see if we should redirect instead of returning the data.
+		if(Input::get('redirect'))
+		{
+			$url = URL::base() . '/' . Input::get('redirect');
+			
+			// Did we add an "id" to the redirect string. This way the redirect
+			// can include the new id.
+			if(isset($data['Id']))
+			{
+				$url = str_ireplace(':id', $data['Id'], $url);
+			}
+			
+			return Redirect::to($url);
+		}
+	
 		// Setup the return array
 		$rt = array();
 		$rt['status'] = $status;
@@ -131,6 +164,7 @@ class ApiController extends \Laravel\Routing\Controller
 			}
 		}
 		
+		// Format the return in the output passed in.
 		switch(Input::get('format'))
 		{
 			case 'php':
