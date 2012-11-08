@@ -11,7 +11,9 @@ namespace Cloudmanic\WarChest\Controllers;
 
 use Laravel\Input as Input;
 use Laravel\Response as Response;
+use Laravel\Validator as Validator;
 use Laravel\Redirect as Redirect;
+use Laravel\Request as Request;
 use Laravel\Routing\Router as Route;
 use Laravel\Url as Url;
 
@@ -21,6 +23,7 @@ class ApiController extends \Laravel\Routing\Controller
 	public $model = '';
 	public $not_allowed = array();
 	public $before_filter = 'api_auth';
+	public $rules_create = array();
 	 
 	//
 	// Construct.
@@ -41,11 +44,19 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	public function post_create()
 	{		
+		// Validate that we are allowed to access this method
 		if($this->_is_allowed(__FUNCTION__))
 		{
 			return $this->_method_not_allowed();
 		}
 		
+		// Validate this request. 
+		if($rt = $this->_validate_request($this->rules_create))
+		{
+			return $rt;
+		}
+		
+		// Load model and insert data.
 		$m = $this->model;
 		$data['Id'] = $m::insert(Input::get());	
 		
@@ -57,11 +68,19 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	public function post_update($id)
 	{				
+		// Validate that we are allowed to access this method
 		if($this->_is_allowed(__FUNCTION__))
 		{
 			return $this->_method_not_allowed();
 		}
 		
+		// Validate this request. 
+		if($rt = $this->_validate_request($this->rules_create))
+		{
+			return $rt;
+		}
+		
+		// Load model and update data.
 		$m = $this->model; 
 		$data['Id'] = $id;
 		$m::update(Input::get(), $id);	
@@ -128,15 +147,8 @@ class ApiController extends \Laravel\Routing\Controller
 		// First we see if we should redirect instead of returning the data.
 		if(Input::get('redirect'))
 		{
-			$url = URL::base() . '/' . Input::get('redirect');
-			
-			// Did we add an "id" to the redirect string. This way the redirect
-			// can include the new id.
-			if(isset($data['Id']))
-			{
-				$url = str_ireplace(':id', $data['Id'], $url);
-			}
-			
+			$base = URL::base() . '/' . Input::get('redirect');
+			$url = $this->_filter_redirect_url($base, $data);
 			return Redirect::to($url);
 		}
 	
@@ -178,6 +190,43 @@ class ApiController extends \Laravel\Routing\Controller
 	}
 	
 	// --------------- Private Functions ----------------- //
+	
+	//
+	// Validate requests.
+	//
+	private function _validate_request($rules)
+	{
+		if(is_array($rules) && (count($rules > 0)))
+		{
+			$validation = Validator::make(Input::get(), $this->rules_create);
+			if($validation->fails())
+			{
+				if(Input::get('redirect'))
+				{
+		    	return Redirect::to(Request::server('http_referer'))->with_errors($validation)->with('data', Input::get());
+		    } else
+		    {
+					return $this->api_response(null, 0, $validation->errors->messages);
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	//
+	// Filter the redirect url.
+	//
+	private function _filter_redirect_url($url, $data)
+	{
+		// Id.
+		if(isset($data['Id']))
+		{
+		  $url = str_ireplace(':id', $data['Id'], $url);
+		}
+		
+		return $url;
+	}
 	
 	//
 	// Return and tell the user this method is not allowed.
