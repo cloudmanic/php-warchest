@@ -128,14 +128,14 @@ class ApiController extends \Laravel\Routing\Controller
 		{
 			return $this->_method_not_allowed();
 		}
-		
+
 		$m = $this->model;
 		if($data = $m::get_by_id($id))
 		{	
 			return $this->api_response($data);
 		} else
 		{
-			return $this->api_response(array(), 0, array('Entry not found.'));
+			return $this->api_response(array(), 0, array('system' => array('Entry not found.')));
 		}
 	}
 	
@@ -233,7 +233,7 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	private function _method_not_allowed()
 	{
-		return $this->api_response(array(), 0, array('Method not allowed.'));
+		return $this->api_response(array(), 0, array('system' => array('Method not allowed.')));
 	}
 	
 	//

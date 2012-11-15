@@ -15,6 +15,7 @@ use \Config as Config;
 
 class MyModel
 {	
+	public static $joins = null;
 	protected static $table = '';
 	protected static $query = null;
 
@@ -56,6 +57,14 @@ class MyModel
 		self::get_query()->select($selects);
 	}
 	
+	//
+	// Set join
+	//
+	public static function set_join($table, $left, $right)
+	{
+		self::get_query()->left_join($table, $left, '=', $right);
+	}	
+	
 	// ------------------------ CRUD Functions ----------------------- //
 	
 	//
@@ -69,6 +78,15 @@ class MyModel
 		
 		// Make sure we have a query started.
 		self::get_query();
+		
+		// Do we have joins?
+		if(! is_null(static::$joins))
+		{
+			foreach(static::$joins AS $key => $row)
+			{
+				static::set_join($row['table'], $row['left'], $row['right']);
+			}
+		}
 		
 		// Query
 		$data = self::get_query()->get();
