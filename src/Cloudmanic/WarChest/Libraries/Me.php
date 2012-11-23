@@ -12,7 +12,7 @@ class Me
 	private static $data = array();
 
 	//
-	// Get one index in the data array.
+	// Get one index in the data array. (Legacy, should be removed).
 	//
 	public static function val($key)
 	{
@@ -22,8 +22,13 @@ class Me
 	//
 	// Get logged in user.
 	//
-	public static function get($key)
+	public static function get($key = null)
 	{
+		if(! is_null($key))
+		{
+			return (isset(self::$data[$key])) ? self::$data[$key] : '';
+		}		
+	
 		return self::$data;
 	}
 
