@@ -24,6 +24,8 @@ class ApiController extends \Laravel\Routing\Controller
 	public $not_allowed = array();
 	public $before_filter = 'api_auth';
 	public $rules_create = array();
+	public $rules_update = array();
+	public $rules_message = array();
 	 
 	//
 	// Construct.
@@ -75,7 +77,7 @@ class ApiController extends \Laravel\Routing\Controller
 		}
 		
 		// Validate this request. 
-		if($rt = $this->_validate_request($this->rules_create))
+		if($rt = $this->_validate_request($this->rules_update))
 		{
 			return $rt;
 		}
@@ -198,7 +200,7 @@ class ApiController extends \Laravel\Routing\Controller
 	{
 		if(is_array($rules) && (count($rules > 0)))
 		{
-			$validation = Validator::make(Input::get(), $this->rules_create);
+			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
 			if($validation->fails())
 			{
 				if(Input::get('redirect'))

@@ -50,6 +50,22 @@ class MyModel
 	}
 	
 	//
+	// Set Column OR.
+	//
+	public static function set_or_col($key, $value)
+	{
+		self::get_query()->or_where($key, '=', $value);
+	}
+	
+	//
+	// Set Or Where In
+	//
+	public static function set_or_where_in($col, $list)
+	{
+		self::get_query()->or_where_in($col, $list);
+	}
+	
+	//
 	// Set Columns to select.
 	//
 	public static function set_select($selects)
