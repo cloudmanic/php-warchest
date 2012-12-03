@@ -101,7 +101,7 @@ class ApiController extends \Laravel\Routing\Controller
 		}
 		
 		$m = $this->model;
-		$m::delete($id);	
+		$m::delete_by_id($id);	
 		return $this->api_response(array());
 	}
 	 
