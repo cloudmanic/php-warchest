@@ -147,9 +147,9 @@ class ApiController extends \Laravel\Routing\Controller
 	public function api_response($data = null, $status = 1, $errors = NULL)
 	{
 		// First we see if we should redirect instead of returning the data.
-		if(Input::get('redirect'))
+		if(Input::get('redirect_success'))
 		{
-			$base = URL::base() . '/' . Input::get('redirect');
+			$base = URL::base() . '/' . Input::get('redirect_success');
 			$url = $this->_filter_redirect_url($base, $data);
 			return Redirect::to($url);
 		}
@@ -203,7 +203,7 @@ class ApiController extends \Laravel\Routing\Controller
 			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
 			if($validation->fails())
 			{
-				if(Input::get('redirect'))
+				if(Input::get('redirect_fail'))
 				{
 		    	return Redirect::to(Request::server('http_referer'))->with_errors($validation)->with('data', Input::get());
 		    } else
