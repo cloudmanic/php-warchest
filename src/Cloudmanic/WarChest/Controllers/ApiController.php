@@ -22,6 +22,7 @@ class ApiController extends \Laravel\Routing\Controller
 	public $restful = true;
 	public $model = '';
 	public $not_allowed = array();
+	public $no_auth = false;
 	public $before_filter = 'api_auth';
 	public $rules_create = array();
 	public $rules_update = array();
@@ -35,7 +36,7 @@ class ApiController extends \Laravel\Routing\Controller
 		parent::__construct();
 		\Cloudmanic\WarChest\Libraries\Start::laravel_init();
 		$this->filter('before', $this->before_filter);
-
+		
 		// Guess the model.
 		$tmp = explode('_', get_called_class()); 
 		$this->model = $tmp[2];

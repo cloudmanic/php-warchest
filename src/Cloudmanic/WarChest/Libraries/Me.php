@@ -10,6 +10,7 @@ namespace Cloudmanic\WarChest\Libraries;
 class Me
 {
 	private static $data = array();
+	private static $account = array();
 
 	//
 	// Get one index in the data array. (Legacy, should be removed).
@@ -50,6 +51,35 @@ class Me
 		}
 	
 		self::$data = $data;
+	}
+	
+	//
+	// Set Account.
+	//
+	public static function set_account($data)
+	{
+		self::$account = $data;
+	}
+	
+	//
+	// Get account data.
+	//
+	public static function get_account($key = null)
+	{
+		if(is_null($key))
+		{
+			return self::$account;
+		}
+		
+		return (isset(self::$account[$key])) ? self::$account[$key] : '';
+	}
+	
+	//
+	// Get my account id.
+	//
+	public static function get_account_id()
+	{
+		return (isset(self::$account['AccountsId'])) ? self::$account['AccountsId'] : 0;
 	}
 }
 

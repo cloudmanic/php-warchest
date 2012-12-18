@@ -10,6 +10,8 @@
 
 namespace Cloudmanic\WarChest\Libraries;
 
+use \Users as Users;
+use Laravel\Hash as Hash;
 use Laravel\Input as Input;
 use Laravel\Session as Session;
 use Laravel\URI as URI;
@@ -38,7 +40,7 @@ class CloudAuth
 			// See if we have a session. If Not do something about it.
 			if((! Session::get('AccountId')) || (! Session::get('AccessToken')))
 			{
-				return Redirect::to(Config::get('cloudmanic.login_url'));
+				die(header('location: ' . Config::get('site.login_url')));
 			} 
 			
 			$access_token = Session::get('AccessToken');
@@ -69,12 +71,64 @@ class CloudAuth
 	} 
 	
 	//
+	// Logout.
+	//
+	public static function logout()
+	{
+		Session::flush();
+	}
+	
+	//
+	// Authenicate a session.
+	//
+	public static function auth($email, $pass)
+	{	
+		// Get user by email.
+		if(! $user = Users::get_by_email($email))
+		{	
+			return false;
+		}
+		
+		// Make sure the password is correct.
+		if(Hash::check($pass, $user['UsersPassword']))
+		{
+			self::_do_user($user);
+			Session::put('AccessToken', Users::get_access_token($user['UsersId']));
+		
+			// Get the default AccountId
+			\AcctsUsersLu::set_col('AcctsUsersLuUserId', $user['UsersId']);
+			\AcctsUsersLu::set_order('AcctsUsersLuAcctId');
+			\AcctsUsersLu::set_limit(1);
+			$lp = \AcctsUsersLu::get();
+			
+			// Make sure we have at least one account.
+			if(! isset($lp[0]))
+			{
+				return false;
+			}
+
+			// Set default account
+			Session::put('AccountId', $lp[0]['AcctsUsersLuAcctId']);
+		
+			return true;
+		} 
+		
+		return false;
+	}
+	
+	//
 	// Setup the user. Set the "Me" object and anything else that has to 
 	// happen when a user logs in.
 	//
 	private static function _do_user($user)
-	{			
+	{		
+		// Set the user.
+		unset($user['UsersPassword']);	
 		Me::set($user);
+		
+		// Set the account.
+		$account_id = Session::get('AccountId');
+		Me::set_account(\Accounts::get_by_id($account_id));
 	}
 }
 
