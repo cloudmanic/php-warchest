@@ -8,7 +8,7 @@
 // Note: Non-Cloudmanic Product Version.
 //
 
-namespace Cloudmanic\WarChest\Libraries;
+namespace Cloudmanic\WarChest\Models;
 
 use \DB as DB;
 use \Config as Config;
