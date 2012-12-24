@@ -8,15 +8,16 @@
 // Note: Non-Cloudmanic Product Version.
 //
 
-namespace Cloudmanic\WarChest\Libraries;
+namespace Cloudmanic\WarChest\Models;
 
 use \DB as DB;
 use \Config as Config;
 use \Eloquent as Eloquent;
 
-class MyModel extends Eloquent
+class BasicModel extends Eloquent
 {	
 	public static $joins = null;
+	public static $with = array();
 	protected static $query = null;
 	
 	// ------------------------ Setters ------------------------------ //
@@ -68,6 +69,22 @@ class MyModel extends Eloquent
 	{
 		self::get_query()->left_join($table, $left, '=', $right);
 	}	
+	
+	//
+	// Set with
+	//
+	public static function set_with($with)
+	{
+		self::$with[] = $with;
+	}	
+	
+	//
+	// Clear with
+	//
+	public static function clear_with()
+	{
+		self::$with = array();
+	}
 
 	// ------------------------ CRUD Functions ----------------------- //
 	

@@ -260,7 +260,7 @@ class ApiController extends \Laravel\Routing\Controller
 			{
 				if(Input::get('redirect_fail'))
 				{
-		    	return Redirect::to(Request::server('http_referer'))->with_errors($validation)->with('data', Input::get());
+		    	return Redirect::to(Input::get('redirect_fail'))->with_errors($validation)->with('data', Input::get());
 		    } else
 		    {
 					return $this->api_response(null, 0, $validation->errors->messages);
