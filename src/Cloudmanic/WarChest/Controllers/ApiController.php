@@ -111,12 +111,17 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	public function get_index()
 	{		
+		// Is this action allowed?
 		if($this->_is_allowed(__FUNCTION__))
 		{
 			return $this->_method_not_allowed();
 		}
 		
-		$m = $this->model;
+		// Setup query. Apply any filters we might have passed in.
+		$this->_setup_query();
+		
+		// Load model and run the query.
+		$m = $this->model;		
 		$data = $m::get();	
 		return $this->api_response($data);
 	}
@@ -193,6 +198,55 @@ class ApiController extends \Laravel\Routing\Controller
 	}
 	
 	// --------------- Private Functions ----------------- //
+	
+	//
+	// Setup the query. Apply any filters we might have passed in.
+	//
+	private function _setup_query()
+	{
+		$m = $this->model;
+	
+		// Setup column selectors
+		$cols = array_keys(Input::get());
+		foreach($cols AS $key => $row)
+		{
+			if(preg_match('/^(col_)/', $row))
+			{
+				$col = str_replace('col_', '', $row);
+				$m::set_col($col, Input::get($row));
+			}
+		}
+	
+		// Order by...
+		if(Input::get('order'))
+		{
+			if(Input::get('sort'))
+			{
+				$m::set_order(Input::get('order'), Input::get('sort'));
+			} else
+			{
+				$m::set_order(Input::get('order'));				
+			}
+		}
+		
+		// Select columns...
+		if(Input::get('select'))
+		{
+			$m::set_select(explode(',', Input::get('select')));
+		}
+		
+		// Set limit...
+		if(Input::get('limit'))
+		{
+			$m::set_limit(Input::get('limit'));
+		}
+		
+		// Set offset...
+		if(Input::get('offset') && Input::get('limit'))
+		{
+			$m::set_offset(Input::get('offset'));
+		}
+	}
 	
 	//
 	// Validate requests.
