@@ -21,6 +21,22 @@ class BasicModel extends Eloquent
 	protected static $query = null;
 	
 	// ------------------------ Setters ------------------------------ //
+
+	//
+	// Set limit
+	//
+	public static function set_limit($limit)
+	{
+		self::get_query()->take($limit);
+	}	
+	
+	//
+	// Set offset
+	//
+	public static function set_offset($offset)
+	{
+		self::get_query()->skip($offset);
+	}	
 	
 	//
 	// Set order
