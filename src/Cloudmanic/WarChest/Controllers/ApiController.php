@@ -246,6 +246,12 @@ class ApiController extends \Laravel\Routing\Controller
 		{
 			$m::set_offset(Input::get('offset'));
 		}
+		
+		// Set search....
+		if(Input::get('search'))
+		{
+			$m::set_search(Input::get('search'));
+		}
 	}
 	
 	//

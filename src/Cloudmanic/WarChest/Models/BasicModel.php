@@ -101,6 +101,14 @@ class BasicModel extends Eloquent
 	{
 		self::$with = array();
 	}
+	
+	//
+	// Set search.
+	//
+	public static function set_search($str)
+	{
+		// Place holder we should override this.
+	}
 
 	// ------------------------ CRUD Functions ----------------------- //
 	

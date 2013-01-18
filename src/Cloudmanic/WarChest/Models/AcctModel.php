@@ -86,6 +86,14 @@ class AcctModel extends Eloquent
 		self::get_query()->left_join($table, $left, '=', $right);
 	}	
 
+	//
+	// Set search.
+	//
+	public static function set_search($str)
+	{
+		// Place holder we should override this.
+	}
+	
 	// ------------------------ CRUD Functions ----------------------- //
 	
 	//
