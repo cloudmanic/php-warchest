@@ -48,10 +48,10 @@ class Deploy
 			
 			if($this->laravel_migrate)
 			{
-				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php artisan migrate && composer.phar update && cd scripts && php pkg.php'") . "\n\n";
+				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php artisan migrate && composer.phar update && cd scripts && php pkgs.php'") . "\n\n";
 			} else
 			{
-				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && composer.phar update && cd scripts && php pkg.php'") . "\n\n";				
+				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && composer.phar update && cd scripts && php pkgs.php'") . "\n\n";				
 			}
 		}
 		
