@@ -54,14 +54,26 @@ class ApiController extends \Laravel\Routing\Controller
 		}
 		
 		// Validate this request. 
-		if($rt = $this->_validate_request($this->rules_create))
+		if($rt = $this->_validate_request('create'))
 		{
 			return $rt;
+		}
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_insert'))
+		{
+		  $this->_before_insert();
 		}
 		
 		// Load model and insert data.
 		$m = $this->model;
 		$data['Id'] = $m::insert(Input::get());	
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_after_insert'))
+		{
+		  $this->_after_insert();
+		}
 		
 		return $this->api_response($data);
 	}
@@ -78,15 +90,27 @@ class ApiController extends \Laravel\Routing\Controller
 		}
 		
 		// Validate this request. 
-		if($rt = $this->_validate_request($this->rules_update))
+		if($rt = $this->_validate_request('update'))
 		{
 			return $rt;
+		}
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_update'))
+		{
+		  $this->_before_update($id);
 		}
 		
 		// Load model and update data.
 		$m = $this->model; 
 		$data['Id'] = $id;
 		$m::update(Input::get(), $id);	
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_after_update'))
+		{
+		  $this->_after_update($id);
+		}
 		
 		return $this->api_response($data);
 	}
@@ -257,10 +281,27 @@ class ApiController extends \Laravel\Routing\Controller
 	//
 	// Validate requests.
 	//
-	private function _validate_request($rules)
-	{
+	private function _validate_request($type)
+	{	
+		// A hook before we go any further.
+		if(method_exists($this, '_before_validation'))
+		{
+		  $this->_before_validation();
+		}
+		
+		// Set rules.
+		if($type == 'create')
+		{
+		  $rules = $this->rules_create;
+		} else
+		{
+		  $rules = $this->rules_update;				
+		}
+		
+		// If we have rules we validate.
 		if(is_array($rules) && (count($rules > 0)))
 		{
+			// Time to validate.
 			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
 			if($validation->fails())
 			{
