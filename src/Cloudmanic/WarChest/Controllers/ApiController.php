@@ -230,14 +230,23 @@ class ApiController extends \Laravel\Routing\Controller
 	{
 		$m = $this->model;
 	
+		// A hook so we can add more query attributes.
+		if(method_exists($this, '_before_setup_query'))
+		{
+		  $this->_before_setup_query();
+		}
+	
 		// Setup column selectors
 		$cols = array_keys(Input::get());
 		foreach($cols AS $key => $row)
 		{
 			if(preg_match('/^(col_)/', $row))
 			{
-				$col = str_replace('col_', '', $row);
-				$m::set_col($col, Input::get($row));
+				if(Input::get($row))
+				{
+					$col = str_replace('col_', '', $row);
+					$m::set_col($col, Input::get($row));
+				}
 			}
 		}
 	

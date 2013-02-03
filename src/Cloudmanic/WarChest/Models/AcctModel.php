@@ -62,6 +62,14 @@ class AcctModel extends Eloquent
 		self::get_query()->or_where($key, '=', $value);
 	}
 	
+	// 
+	// Set Like.
+	//
+	public static function set_like_col($key, $value)
+	{
+		self::get_query()->where($key, 'LIKE', '%' . $value . '%');
+	}	
+	
 	//
 	// Set Or Where In
 	//
