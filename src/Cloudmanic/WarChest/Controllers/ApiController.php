@@ -53,10 +53,22 @@ class ApiController extends \Laravel\Routing\Controller
 			return $this->_method_not_allowed();
 		}
 		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_validate'))
+		{
+		  $this->_before_validate();
+		}
+		
 		// Validate this request. 
 		if($rt = $this->_validate_request('create'))
 		{
 			return $rt;
+		}
+
+		// A hook before we go any further.
+		if(method_exists($this, '_before_create_or_update'))
+		{
+		  $this->_before_create_or_update();
 		}
 		
 		// A hook before we go any further.
@@ -89,10 +101,22 @@ class ApiController extends \Laravel\Routing\Controller
 			return $this->_method_not_allowed();
 		}
 		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_validate'))
+		{
+		  $this->_before_validate();
+		}
+		
 		// Validate this request. 
 		if($rt = $this->_validate_request('update'))
 		{
 			return $rt;
+		}
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_create_or_update'))
+		{
+		  $this->_before_create_or_update();
 		}
 		
 		// A hook before we go any further.
