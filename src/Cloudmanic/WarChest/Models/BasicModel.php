@@ -182,6 +182,12 @@ class BasicModel
  		{
  			$data[self::$_table  . 'CreatedAt'] = date('Y-m-d G:i:s');
  		}
+ 		
+		// Add update at date
+ 		if(! isset($data[self::$_table . 'UpdatedAt'])) 
+ 		{
+ 			$data[self::$_table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
+ 		}
 	
  		// Insert the data / clear the query and return the ID.
  		$id = self::get_query()->insertGetId(self::_set_data($data));
@@ -194,6 +200,12 @@ class BasicModel
 	//
 	public static function update($data, $id)
 	{	
+		// Add update at date
+ 		if(! isset($data[self::$_table . 'UpdatedAt'])) 
+ 		{
+ 			$data[self::$_table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
+ 		}
+	
 		$rt = self::get_query()->where(self::$_table . 'Id', '=', $id)->update(self::_set_data($data));
 		self::clear_query();
 		return $rt;
