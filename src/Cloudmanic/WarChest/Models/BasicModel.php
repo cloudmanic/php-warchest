@@ -10,14 +10,14 @@
 
 namespace Cloudmanic\WarChest\Models;
 
-use \DB as DB;
+use Illuminate\Support\Facades\DB as DB;
 use \Config as Config;
-use \Eloquent as Eloquent;
 
-class BasicModel extends Eloquent
+class BasicModel
 {	
 	public static $joins = null;
-	public static $with = array();
+	public static $_table = null;
+	private static $_with = array();
 	protected static $query = null;
 	
 	// ------------------------ Setters ------------------------------ //
@@ -91,7 +91,7 @@ class BasicModel extends Eloquent
 	//
 	public static function set_with($with)
 	{
-		self::$with[] = $with;
+		self::$_with[] = $with;
 	}	
 	
 	//
@@ -99,7 +99,7 @@ class BasicModel extends Eloquent
 	//
 	public static function clear_with()
 	{
-		self::$with = array();
+		self::$_with = array();
 	}
 	
 	//
@@ -132,21 +132,25 @@ class BasicModel extends Eloquent
 		}
 		
 		// Query
-		$d = self::get_query()->get();
+		$data = self::get_query()->get();
 		
 		// Clear query.		
 		self::clear_query();
 		
-		// Loop through data and format.
-		foreach($d AS $key => $row)
+		// An option formatting function call.
+		if(method_exists(self::$_table, '_format_get'))
 		{
-			$data[] = $row->to_array();
+			$new = array();
 			
-			// An option formatting function call.
-			if(method_exists(self::$table, '_format_get'))
+			// Loop through data and format.
+			foreach($data AS $key => $row)
 			{
+				$new[] = $row;
 				static::_format_get($data[$key]);
 			}
+			
+			// Return new formated data.
+			return $new;
 		}
 		
 		return $data;
@@ -158,7 +162,7 @@ class BasicModel extends Eloquent
 	public static function get_by_id($id)
 	{
 		self::get_query();
-		self::set_col(self::$table . 'Id', $id);
+		self::set_col(self::$_table . 'Id', $id);
 		$d = self::get();
 		$data = (isset($d[0])) ? (array) $d[0] : false;
 		self::clear_query();		
@@ -174,13 +178,13 @@ class BasicModel extends Eloquent
 		self::get_query();
 	
 		// Add created at date
- 		if(! isset($data[self::$table . 'CreatedAt'])) 
+ 		if(! isset($data[self::$_table . 'CreatedAt'])) 
  		{
- 			$data[self::$table  . 'CreatedAt'] = date('Y-m-d G:i:s');
+ 			$data[self::$_table  . 'CreatedAt'] = date('Y-m-d G:i:s');
  		}
 	
  		// Insert the data / clear the query and return the ID.
- 		$id = self::get_query()->insert_get_id(self::_set_data($data));
+ 		$id = self::get_query()->insertGetId(self::_set_data($data));
  		self::clear_query();
  		return $id;
 	}
@@ -190,7 +194,7 @@ class BasicModel extends Eloquent
 	//
 	public static function update($data, $id)
 	{	
-		$rt = self::get_query()->where(self::$table . 'Id', '=', $id)->update(self::_set_data($data));
+		$rt = self::get_query()->where(self::$_table . 'Id', '=', $id)->update(self::_set_data($data));
 		self::clear_query();
 		return $rt;
 	}	
@@ -204,7 +208,7 @@ class BasicModel extends Eloquent
 		self::get_query();
 		
  		// Delete entry and clear query.
-		self::get_query()->where(self::$table . 'Id', '=', $id)->delete();
+		self::get_query()->where(self::$_table . 'Id', '=', $id)->delete();
 		self::clear_query();
 	}
 	
@@ -245,8 +249,8 @@ class BasicModel extends Eloquent
 		if(is_null(self::$query))
 		{
 			$table = explode('\\', get_called_class());
-			self::$table = end($table);
-			self::$query = new \Laravel\Database\Eloquent\Query(self::$table);
+			self::$_table = end($table);
+			self::$query = DB::table(self::$_table);
 			return self::$query;
 		} else
 		{
@@ -260,13 +264,13 @@ class BasicModel extends Eloquent
 	private static function _set_data($data)
  	{
  		$q = array();
- 		$fields = DB::query('SHOW COLUMNS FROM ' . self::$table);
+ 		$fields = DB::select('SHOW COLUMNS FROM ' . self::$_table);
  		
  		foreach($fields AS $key => $row)
  		{ 
- 			if(isset($data[$row->Field])) 
+ 			if(isset($data[$row['Field']])) 
  			{
- 				$q[$row->Field] = $data[$row->Field];
+ 				$q[$row['Field']] = $data[$row['Field']];
  			}
  		}
  		

@@ -9,50 +9,63 @@
 
 namespace Cloudmanic\WarChest\Controllers;
 
-use Laravel\Input as Input;
-use Laravel\Response as Response;
-use Laravel\Validator as Validator;
-use Laravel\Redirect as Redirect;
-use Laravel\Request as Request;
-use Laravel\Routing\Router as Route;
-use Laravel\Url as Url;
+use Illuminate\Support\Facades\Input as Input;
+use Illuminate\Support\Facades\Response as Response;
+use Illuminate\Support\Facades\Validator as Validator;
 
-class ApiController extends \Laravel\Routing\Controller
+class ApiController extends \Illuminate\Routing\Controllers\Controller
 {
-	public $restful = true;
 	public $model = '';
-	public $not_allowed = array();
 	public $no_auth = false;
-	public $before_filter = 'api_auth';
 	public $rules_create = array();
 	public $rules_update = array();
 	public $rules_message = array();
-	 
+	
 	//
 	// Construct.
 	//
 	public function __construct()
-	{
-		parent::__construct();
-		\Cloudmanic\WarChest\Libraries\Start::laravel_init();
-		$this->filter('before', $this->before_filter);
-		
+	{		
 		// Guess the model.
-		$tmp = explode('_', get_called_class()); 
-		$this->model = $tmp[2];
+		$tmp = explode('\\', get_called_class()); 		
+		$this->model = end($tmp);
 	}
-
+	
+	//
+	// Index (get).
+	//
+	public function index()
+	{			
+		// Setup query. Apply any filters we might have passed in.
+		$this->_setup_query();
+		
+		// Load model and run the query.
+		$m = $this->model;		
+		$data = $m::get();	
+		return $this->api_response($data);
+	}
+	
+	//
+	// Get by id. 
+	// Returns status 0 if there was no data found.
+	//
+	public function id($_id)
+	{
+		$m = $this->model;
+		if($data = $m::get_by_id($_id))
+		{	
+			return $this->api_response($data);
+		} else
+		{
+			return $this->api_response(array(), 0, array('system' => array('Entry not found.')));
+		}
+	}
+	
 	//
 	// Insert.
 	//
-	public function post_create()
+	public function create()
 	{		
-		// Validate that we are allowed to access this method
-		if($this->_is_allowed(__FUNCTION__))
-		{
-			return $this->_method_not_allowed();
-		}
-		
 		// A hook before we go any further.
 		if(method_exists($this, '_before_validate'))
 		{
@@ -91,123 +104,10 @@ class ApiController extends \Laravel\Routing\Controller
 	}
 	
 	//
-	// Update.
-	//
-	public function post_update($id)
-	{				
-		// Validate that we are allowed to access this method
-		if($this->_is_allowed(__FUNCTION__))
-		{
-			return $this->_method_not_allowed();
-		}
-		
-		// A hook before we go any further.
-		if(method_exists($this, '_before_validate'))
-		{
-		  $this->_before_validate();
-		}
-		
-		// Validate this request. 
-		if($rt = $this->_validate_request('update'))
-		{
-			return $rt;
-		}
-		
-		// A hook before we go any further.
-		if(method_exists($this, '_before_create_or_update'))
-		{
-		  $this->_before_create_or_update();
-		}
-		
-		// A hook before we go any further.
-		if(method_exists($this, '_before_update'))
-		{
-		  $this->_before_update($id);
-		}
-		
-		// Load model and update data.
-		$m = $this->model; 
-		$data['Id'] = $id;
-		$m::update(Input::get(), $id);	
-		
-		// A hook before we go any further.
-		if(method_exists($this, '_after_update'))
-		{
-		  $this->_after_update($id);
-		}
-		
-		return $this->api_response($data);
-	}
-	 
-	//
-	// Delete
-	//
-	public function get_delete($id)
-	{		
-		if($this->_is_allowed(__FUNCTION__))
-		{
-			return $this->_method_not_allowed();
-		}
-		
-		$m = $this->model;
-		$m::delete_by_id($id);	
-		return $this->api_response(array());
-	}
-	 
-	//
-	// Get.
-	//
-	public function get_index()
-	{		
-		// Is this action allowed?
-		if($this->_is_allowed(__FUNCTION__))
-		{
-			return $this->_method_not_allowed();
-		}
-		
-		// Setup query. Apply any filters we might have passed in.
-		$this->_setup_query();
-		
-		// Load model and run the query.
-		$m = $this->model;		
-		$data = $m::get();	
-		return $this->api_response($data);
-	}
-	
-	//
-	// Get by id. 
-	// Returns status 0 if there was no data found.
-	//
-	public function get_id($id)
-	{
-		if($this->_is_allowed(__FUNCTION__))
-		{
-			return $this->_method_not_allowed();
-		}
-
-		$m = $this->model;
-		if($data = $m::get_by_id($id))
-		{	
-			return $this->api_response($data);
-		} else
-		{
-			return $this->api_response(array(), 0, array('system' => array('Entry not found.')));
-		}
-	}
-	
-	//
 	// Return a response based on the get "format" param.
 	//
 	public function api_response($data = null, $status = 1, $errors = NULL)
-	{
-		// First we see if we should redirect instead of returning the data.
-		if(Input::get('redirect_success'))
-		{
-			$base = URL::base() . '/' . Input::get('redirect_success');
-			$url = $this->_filter_redirect_url($base, $data);
-			return Redirect::to($url);
-		}
-	
+	{	
 		// Setup the return array
 		$rt = array();
 		$rt['status'] = $status;
@@ -338,13 +238,7 @@ class ApiController extends \Laravel\Routing\Controller
 			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
 			if($validation->fails())
 			{
-				if(Input::get('redirect_fail'))
-				{
-		    	return Redirect::to(Input::get('redirect_fail'))->with_errors($validation)->with('data', Input::get());
-		    } else
-		    {
-					return $this->api_response(null, 0, $validation->errors->messages);
-				}
+				return $this->api_response(null, 0, $validation->errors->messages);
 			}
 		}
 		
