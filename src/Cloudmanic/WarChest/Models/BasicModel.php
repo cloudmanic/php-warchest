@@ -144,6 +144,9 @@ class BasicModel
 		// Query
 		$data = self::get_query()->get();
 		
+		// Convert to an array because we like arrays better.
+		$data = self::_obj_to_array($data);
+		
 		// Clear query.		
 		self::clear_query();
 		
@@ -270,7 +273,6 @@ class BasicModel
 	{
 		if(is_null(self::$query))
 		{
-			echo static::$_connection;
 			$table = explode('\\', get_called_class());
 			self::$_table = end($table);
 			self::$query = DB::connection(static::$_connection)->table(self::$_table);
@@ -299,6 +301,27 @@ class BasicModel
  		
  		return $q;
  	}
+ 	
+ 	//
+ 	// Convert the object the database returns to an array.
+ 	// Yes, PDO can return arrays, but Laravel really counts
+ 	// on objects instead of arrays.
+ 	//
+ 	private static function _obj_to_array($data)
+ 	{
+	 	if(is_array($data) || is_object($data))
+	 	{
+		 	$result = array();
+		 	foreach($data as $key => $value)
+		 	{
+			 	$result[$key] = self::_obj_to_array($value);
+			}
+
+			return $result;
+		}
+    
+		return $data;
+	}
 }
 
 /* End File */
