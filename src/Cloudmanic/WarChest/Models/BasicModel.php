@@ -293,9 +293,9 @@ class BasicModel
  		
  		foreach($fields AS $key => $row)
  		{ 
- 			if(isset($data[$row['Field']])) 
+ 			if(isset($data[$row->Field])) 
  			{
- 				$q[$row['Field']] = $data[$row['Field']];
+ 				$q[$row->Field] = $data[$row->Field];
  			}
  		}
  		

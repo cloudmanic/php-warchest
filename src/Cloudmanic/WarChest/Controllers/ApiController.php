@@ -73,7 +73,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		}
 		
 		// Validate this request. 
-		if($rt = $this->_validate_request('create'))
+		if($rt = $this->validate_request('create'))
 		{
 			return $rt;
 		}
@@ -122,13 +122,12 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		} else
 		{
 			// Format the errors
-			foreach($errors AS $key => $row)
+			foreach(Input::get() AS $key => $row)
 			{
-				// You can have more than one error per field.
-				foreach($row AS $key2 => $row2)
-				{
-					$rt['errors'][] = array('field' => $key, 'error' => $row2);
-				}
+			  if($errors->has($key))
+			  {
+			    $rt['errors'][] = array('field' => $key, 'error' => $errors->first($key, ':message'));
+			  }
 			}
 		}
 		
@@ -143,6 +142,42 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 				return Response::json($rt);
 			break;
 		}
+	}
+	
+	//
+	// Validate requests.
+	//
+	public function validate_request($type)
+	{			
+		// A hook before we go any further.
+		if(method_exists($this, '_before_validation'))
+		{
+		  $this->_before_validation();
+		}
+		
+		// Set rules.
+		if($type == 'create')
+		{
+		  $rules = $this->rules_create;
+		} else
+		{
+		  $rules = $this->rules_update;				
+		}		
+		
+		// If we have rules we validate.
+		if(is_array($rules) && (count($rules > 0)))
+		{
+			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
+		
+			if($validation->fails())
+			{
+			  $messages = $validation->messages();
+			  return $this->api_response(null, 0, $messages);
+			}
+		}
+		
+		// We consider true a state with errors.
+		return false;
 	}
 	
 	// --------------- Private Functions ----------------- //
@@ -209,40 +244,6 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		{
 			$m::set_search(Input::get('search'));
 		}
-	}
-	
-	//
-	// Validate requests.
-	//
-	private function _validate_request($type)
-	{	
-		// A hook before we go any further.
-		if(method_exists($this, '_before_validation'))
-		{
-		  $this->_before_validation();
-		}
-		
-		// Set rules.
-		if($type == 'create')
-		{
-		  $rules = $this->rules_create;
-		} else
-		{
-		  $rules = $this->rules_update;				
-		}
-		
-		// If we have rules we validate.
-		if(is_array($rules) && (count($rules > 0)))
-		{
-			// Time to validate.
-			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
-			if($validation->fails())
-			{
-				return $this->api_response(null, 0, $validation->errors->messages);
-			}
-		}
-		
-		return false;
 	}
 	
 	//
