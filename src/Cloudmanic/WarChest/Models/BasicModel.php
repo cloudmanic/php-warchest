@@ -18,9 +18,19 @@ class BasicModel
 	public static $joins = null;
 	public static $_table = null;
 	private static $_with = array();
+	public static $_connection = 'mysql';
 	protected static $query = null;
+
 	
 	// ------------------------ Setters ------------------------------ //
+
+	//
+	// Set connection.
+	//
+	public static function set_connection($con)
+	{
+		self::$_connection = $con;
+	}
 
 	//
 	// Set limit
@@ -260,9 +270,10 @@ class BasicModel
 	{
 		if(is_null(self::$query))
 		{
+			echo static::$_connection;
 			$table = explode('\\', get_called_class());
 			self::$_table = end($table);
-			self::$query = DB::table(self::$_table);
+			self::$query = DB::connection(static::$_connection)->table(self::$_table);
 			return self::$query;
 		} else
 		{
