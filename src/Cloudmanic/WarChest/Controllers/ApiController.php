@@ -106,7 +106,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	// Return a response based on the get "format" param.
 	//
-	public function api_response($data = null, $status = 1, $errors = NULL)
+	public function api_response($data = null, $status = 1, $errors = NULL, $cust_errors = NULL)
 	{	
 		// Setup the return array
 		$rt = array();
@@ -118,7 +118,14 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		// Set errors.
 		if(is_null($errors))
 		{
-			$rt['errors'] = array();
+			// See if we passed in any custom errors.
+			if(is_null($cust_errors))
+			{
+				$rt['errors'] = array();
+			} else
+			{
+				$rt['errors'] = $cust_errors;
+			}
 		} else
 		{
 			// Format the errors
