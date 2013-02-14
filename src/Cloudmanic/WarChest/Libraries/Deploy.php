@@ -39,7 +39,7 @@ class Deploy
 		// Commit any changes
 		echo "\n###### GIT Commiting #####\n";
 		$comment = 'Deploy commit - ' . time() . ' - ' . exec("whoami") . ' - ' . exec("hostname");
-		echo exec("cd $this->app_path && git add . && git commit -m '$comment' && git push origin $this->branch && cd scripts") . "\n";
+		echo exec("cd $this->app_path && git checkout $this->branch && git add . && git commit -m '$comment' && git push origin $this->branch && cd scripts") . "\n";
 		
 		// Deploy to the servers.
 		foreach($this->hosts AS $key => $row)
