@@ -18,6 +18,7 @@ use \Cloudmanic\WarChest\Libraries\Me as Me;
 class AcctModel extends Eloquent
 {	
 	public static $joins = null;
+	public static $checked = null;
 	protected static $query = null;
 	
 	// ------------------------ Setters ------------------------------ //
@@ -171,6 +172,9 @@ class AcctModel extends Eloquent
 	//
 	public static function insert($data)
 	{
+		// Checked checked.
+		$data = self::check_checked($data);
+	
 		// Make sure we have a query started.
 		self::get_query();
 	
@@ -194,6 +198,9 @@ class AcctModel extends Eloquent
 	//
 	public static function update($data, $id)
 	{	
+		// Checked checked.
+		$data = self::check_checked($data);
+	
 		// Make sure we have a query started.
 		self::get_query();
 	
@@ -237,6 +244,27 @@ class AcctModel extends Eloquent
 	}
 	
 	// ----------------- Helper Function  -------------- //
+	
+	//
+	// Check to see if we have any checked dates. In html
+	// if a checkbox is not checked we do not POST it. So here
+	// we override it. 
+	//
+	private static function check_checked($data)
+	{
+		if((! is_null(static::$checked)) && is_array(static::$checked))
+		{
+			foreach(static::$checked AS $key => $row)
+			{
+				if(! isset($data[$row]))
+				{
+					$data[$row] = "0";
+				}
+			}
+		}
+		
+		return $data;
+	}
 	
 	//
 	// Get last query.
