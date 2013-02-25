@@ -38,8 +38,11 @@ class ApiController extends \Laravel\Routing\Controller
 		$this->filter('before', $this->before_filter);
 		
 		// Guess the model.
-		$tmp = explode('_', get_called_class()); 
-		$this->model = $tmp[2];
+		if(empty($this->model))
+		{
+			$tmp = explode('_', get_called_class()); 
+			$this->model = $tmp[2];
+		}
 	}
 
 	//
