@@ -12,6 +12,22 @@ namespace Cloudmanic\WarChest\Libraries;
 class Date
 {
 	//
+	// Return a date by a month and a year. Is either "Today" 
+	// or some date.
+	//
+	static public function recent_day($date, $style = 'n/j/Y')
+	{
+		$time = strtotime($date);
+		
+		if(($time > strtotime('-1 day')) && ($time < strtotime('+1 day')))
+		{
+			return 'Today';
+		}
+		
+		return date($style, $time);
+	}
+	
+	//
 	// Return a user friendly string based on the time 
 	// php time object we pass in.
 	//
