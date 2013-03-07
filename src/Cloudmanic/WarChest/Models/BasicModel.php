@@ -18,6 +18,7 @@ class BasicModel extends Eloquent
 {	
 	public static $joins = null;
 	public static $with = array();
+	public static $datetimes = array();
 	protected static $query = null;
 	
 	// ------------------------ Setters ------------------------------ //
@@ -173,11 +174,9 @@ class BasicModel extends Eloquent
 		// Make sure we have a query started.
 		self::get_query();
 	
-		// Add created at date
- 		if(! isset($data[self::$table . 'CreatedAt'])) 
- 		{
- 			$data[self::$table  . 'CreatedAt'] = date('Y-m-d G:i:s');
- 		}
+		// Add created / updated at date
+		$data[self::$table  . 'CreatedAt'] = date('Y-m-d G:i:s');
+		$data[self::$table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
 	
  		// Insert the data / clear the query and return the ID.
  		$id = self::get_query()->insert_get_id(self::_set_data($data));
@@ -190,6 +189,7 @@ class BasicModel extends Eloquent
 	//
 	public static function update($data, $id)
 	{	
+		$data[self::$table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
 		$rt = self::get_query()->where(self::$table . 'Id', '=', $id)->update(self::_set_data($data));
 		self::clear_query();
 		return $rt;
@@ -267,9 +267,15 @@ class BasicModel extends Eloquent
  			if(isset($data[$row->Field])) 
  			{
  				$q[$row->Field] = $data[$row->Field];
+ 				
+ 				// Set MYSQL date.
+ 				if(in_array($row->Field, static::$datetimes))
+ 				{
+	 				$q[$row->Field] = date('Y-m-d G:i:s', strtotime($q[$row->Field]));
+ 				}
  			}
  		}
- 		
+ 		 		
  		return $q;
  	}
 }
