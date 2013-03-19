@@ -5,8 +5,6 @@
 // Date: 10/21/2012
 //
 
-// Please install https://github.com/mishoo/UglifyJS
-
 namespace Cloudmanic\WarChest\Libraries;
 
 include_once(__DIR__ . '/../scripts/libs/minify_css.php');
