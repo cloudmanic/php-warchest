@@ -5,6 +5,8 @@
 // Date: 10/21/2012
 //
 
+// Please install https://github.com/mishoo/UglifyJS
+
 namespace Cloudmanic\WarChest\Libraries;
 
 class Deploy
@@ -13,8 +15,15 @@ class Deploy
 	public $hosts = array('web2.cloudmanic.com');
 	public $remote_dir = '/var/www/dev.elevationfit.com';
 	public $ssh_port = '9022';
+	public $css_js_file_dev = '../app/views/layouts/app-dev-css-js.php';
+	public $css_js_file_prod = '../app/views/layouts/app-prod-css-js.php';
+	public $uglifyjs = '../vendor/cloudmanic/php-warchest/src/Cloudmanic/WarChest/scripts/libs/node_modules/uglify-js/bin/uglifyjs';
+	public $public_cache = '../public/cache';
 	public $app_path = '../';
 	public $laravel_migrate = true;
+	public $cdn_key = '';
+	public $cdn_user = '';
+	public $cdn_container = '';
 
 	//
 	// Construct.
@@ -79,6 +88,76 @@ class Deploy
 			$file = str_ireplace('#	deleted:    ', '', $row);
 			exec("cd $this->app_path && git rm '$file'");
 		} 
+	}
+	
+	// --------------- JS Dealings ------------------- //
+	
+	//
+	// Combine the javascript
+	//
+	function combine_js()
+	{
+		$master_js = '';
+		$css_js = file_get_contents($this->css_js_file_dev);
+		$lines = explode("\n", $css_js);
+		
+		foreach($lines AS $key => $row)
+		{
+			preg_match('<script.+src=\"(.+.js)\".+>', $row, $matches);
+			if(isset($matches[1]) && (! empty($matches[1])))
+			{
+				$master_js .= file_get_contents('../public' . $matches[1]) . "\n\n"; 
+			}
+		}
+		
+		// If we have any new JS we build a new hash file for the JS.
+		$hash = md5($master_js);
+		if(! is_file("$this->public_cache/$hash.min.js"))
+		{			
+			echo "\n###### Combining JS Files ######\n";
+			file_put_contents("$this->public_cache/$hash.js", $master_js);
+			unset($master_js);
+			
+			echo "\n###### Compressing JS File ######\n";
+			exec("$this->uglifyjs $this->public_cache/$hash.js -m -o $this->public_cache/$hash.min.js");
+			unlink("$this->public_cache/$hash.js");
+			
+/*
+			// Upload to rackspace.
+			echo "\n###### Uploading Combining JS To Rackspace - App ######\n";
+			$this->rs_upload("$this->public_cache/$hash.min.js", "assets/javascript/$hash.min.js", 'application/x-javascript');
+*/
+		}
+		
+		// Make sure our public view is updated with the combined CSS.
+		//$f = file_get_contents($this->css_js_file_prod) . "\n";
+		$tag = '<script type="text/javascript" src="/cache/' . "$hash.min.js" . '"></script>';
+		//$tag = '<script type="text/javascript" src="' . $this->rs_ssl_url . "assets/javascript/$hash.min.js" . '"></script>';
+		file_put_contents($this->css_js_file_prod, $tag);
+		
+		echo "\n";
+	}
+	
+	// -------------------- Framework Functions ----------------- //
+	
+	//
+	// Load laravel. Pass in the path the config directory.
+	//
+	public function load_laravel($config_dir)
+	{
+		// If not directory error out.
+		if(! is_dir($config_dir))
+		{
+			die('Laravel Config Directory Not Found');
+		}
+		
+		// Load the site config.
+		$config = include($config_dir . '/site.php');
+		
+		// Setup the configs.
+		$this->cdn_key = (isset($config['rackspace_key'])) ? $config['rackspace_key'] : $this->cdn_key;
+		$this->cdn_user = (isset($config['rackspace_username'])) ? $config['rackspace_username'] : $this->cdn_user;
+		$this->cdn_container = (isset($config['rackspace_container'])) ? $config['rackspace_container'] : $this->cdn_container;
 	}
 }
 
