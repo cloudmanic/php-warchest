@@ -9,6 +9,9 @@
 
 namespace Cloudmanic\WarChest\Libraries;
 
+define('RAXSDK_OBJSTORE_NAME','cloudFiles');
+define('RAXSDK_OBJSTORE_REGION','DFW');
+
 class Deploy
 {
 	public $branch = 'master';
@@ -24,6 +27,8 @@ class Deploy
 	public $cdn_key = '';
 	public $cdn_user = '';
 	public $cdn_container = '';
+	public $cdn_url = '';
+	public $prod_file_lines = array();
 
 	//
 	// Construct.
@@ -42,6 +47,10 @@ class Deploy
 	//
 	public function push()
 	{
+		// Minify the CSS / JS
+		$this->combine_js();
+		$this->build_prod_css_js();
+	
 		// Delete any files from git repo.
 		$this->delete_files_from_commit();
 	
@@ -90,12 +99,29 @@ class Deploy
 		} 
 	}
 	
+	// --------------- Deploy Functions ------------------- //
+	
+	// 
+	// Build the production css / js file.
+	//
+	public function build_prod_css_js()
+	{
+		$str = '';
+
+		foreach($this->prod_file_lines AS $key => $row)
+		{
+			$str .= $row . "\n";
+		}
+		
+		file_put_contents($this->css_js_file_prod, $str);
+	}
+	
 	// --------------- JS Dealings ------------------- //
 	
 	//
 	// Combine the javascript
 	//
-	function combine_js()
+	public function combine_js()
 	{
 		$master_js = '';
 		$css_js = file_get_contents($this->css_js_file_dev);
@@ -122,20 +148,34 @@ class Deploy
 			exec("$this->uglifyjs $this->public_cache/$hash.js -m -o $this->public_cache/$hash.min.js");
 			unlink("$this->public_cache/$hash.js");
 			
-/*
 			// Upload to rackspace.
-			echo "\n###### Uploading Combining JS To Rackspace - App ######\n";
-			$this->rs_upload("$this->public_cache/$hash.min.js", "assets/javascript/$hash.min.js", 'application/x-javascript');
-*/
+			echo "\n###### Uploading Combined JS To Rackspace ######\n";
+			$this->rs_upload("$this->public_cache/$hash.min.js", "assets/js/$hash.min.js", 'application/x-javascript');
 		}
 		
-		// Make sure our public view is updated with the combined CSS.
-		//$f = file_get_contents($this->css_js_file_prod) . "\n";
-		$tag = '<script type="text/javascript" src="/cache/' . "$hash.min.js" . '"></script>';
-		//$tag = '<script type="text/javascript" src="' . $this->rs_ssl_url . "assets/javascript/$hash.min.js" . '"></script>';
-		file_put_contents($this->css_js_file_prod, $tag);
+		// Add javascript to the prod file. 
+		$this->prod_file_lines[] = '<script type="text/javascript" src="' . $this->cdn_url . "assets/js/$hash.min.js" . '"></script>';
+		//file_put_contents($this->css_js_file_prod, $tag);
 		
 		echo "\n";
+	}
+	
+	// -------------------- CDN Functions ----------------- //
+	
+	//
+	// Send file to rackspace.
+	//
+	public function rs_upload($file, $name, $type)
+	{
+		$connection = new \OpenCloud\Rackspace(RACKSPACE_US, array('username' => 'triadmin', 'apiKey' => '5b0bb7e23f5b3bb88cd35595c89d8167'));
+		
+		$ostore = $connection->ObjectStore();
+		
+		$cont = $ostore->Container('nationaldb.org');
+		
+		$obj = $cont->DataObject();
+		
+		$obj->Create(array('name' => $name, 'content_type' => $type), $file);
 	}
 	
 	// -------------------- Framework Functions ----------------- //
@@ -158,6 +198,7 @@ class Deploy
 		$this->cdn_key = (isset($config['rackspace_key'])) ? $config['rackspace_key'] : $this->cdn_key;
 		$this->cdn_user = (isset($config['rackspace_username'])) ? $config['rackspace_username'] : $this->cdn_user;
 		$this->cdn_container = (isset($config['rackspace_container'])) ? $config['rackspace_container'] : $this->cdn_container;
+		$this->cdn_url = (isset($config['rackspace_url'])) ? $config['rackspace_url'] : $this->cdn_url;
 	}
 }
 
