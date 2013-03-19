@@ -9,6 +9,8 @@
 
 namespace Cloudmanic\WarChest\Libraries;
 
+include_once(__DIR__ . '/../scripts/libs/minify_css.php');
+
 define('RAXSDK_OBJSTORE_NAME','cloudFiles');
 define('RAXSDK_OBJSTORE_REGION','DFW');
 
@@ -29,6 +31,7 @@ class Deploy
 	public $cdn_container = '';
 	public $cdn_url = '';
 	public $prod_file_lines = array();
+	public $css_file_dirs = array('images' => '../public/assets/css/images');
 
 	//
 	// Construct.
@@ -48,7 +51,9 @@ class Deploy
 	public function push()
 	{
 		// Minify the CSS / JS
+		$this->combine_css();
 		$this->combine_js();
+		$this->rs_file_sync();
 		$this->build_prod_css_js();
 	
 		// Delete any files from git repo.
@@ -116,7 +121,46 @@ class Deploy
 		file_put_contents($this->css_js_file_prod, $str);
 	}
 	
+	// --------------- CSS Dealings ------------------ //
+	
 	// --------------- JS Dealings ------------------- //
+	
+	//
+	// Combine and deploy to CDN.
+	//
+	function combine_css()
+	{
+		$master_css = '';
+		$css_js = file_get_contents($this->css_js_file_dev);
+		$lines = explode("\n", $css_js);
+		
+		foreach($lines AS $key => $row)
+		{
+			preg_match('<link.+href=\"(.+.css)\".+\/>', $row, $matches);
+			if(isset($matches[1]) && (! empty($matches[1])))
+			{
+				$master_css .= file_get_contents('../public' . $matches[1]); 
+			}
+		}
+		
+		// If we have any new JS we build a new hash file for the JS.
+		$hash = md5($master_css);
+		if(! is_file("$this->public_cache/$hash.css"))
+		{									
+			echo "\n###### Compressing CSS File ######\n";
+			$cssmin = new \Minify_CSS();
+			file_put_contents("$this->public_cache/$hash.css", $cssmin->minify($master_css));
+			
+			// Upload to rackspace.
+			echo "\n###### Uploading Combined JS To Rackspace ######\n";
+			$this->rs_upload("$this->public_cache/$hash.css", "assets/css/$hash.css", 'text/css');
+		}
+		
+		// Add CSS to the prod list. 
+		$this->prod_file_lines[] = '<link type="text/css" rel="stylesheet" href="' . $this->cdn_url . "assets/css/$hash.css" . '" media="screen" />';
+		
+		echo "\n";		
+	}
 	
 	//
 	// Combine the javascript
@@ -167,15 +211,58 @@ class Deploy
 	//
 	public function rs_upload($file, $name, $type)
 	{
-		$connection = new \OpenCloud\Rackspace(RACKSPACE_US, array('username' => 'triadmin', 'apiKey' => '5b0bb7e23f5b3bb88cd35595c89d8167'));
+		$connection = new \OpenCloud\Rackspace(RACKSPACE_US, array('username' => $this->cdn_user, 'apiKey' => $this->cdn_key));
 		
 		$ostore = $connection->ObjectStore();
 		
-		$cont = $ostore->Container('nationaldb.org');
+		$cont = $ostore->Container($this->cdn_container);
 		
 		$obj = $cont->DataObject();
 		
+		echo "\n# Uploading:  $file \n";
 		$obj->Create(array('name' => $name, 'content_type' => $type), $file);
+	}
+	
+	//
+	// Sync Files to Rackspace.
+	//
+	function rs_file_sync()
+	{
+		echo "\n###### Uploading Files To Rackspace ######\n";
+	
+		// Build a hash of all the files currently at rackspace.
+		$connection = new \OpenCloud\Rackspace(RACKSPACE_US, array('username' => $this->cdn_user, 'apiKey' => $this->cdn_key));
+		
+		$ostore = $connection->ObjectStore();
+		
+		$cont = $ostore->Container($this->cdn_container);
+		
+		$list = $cont->ObjectList();
+		$mdhash = array();
+		while($o = $list->Next())
+		{
+			$mdhash[$o->name] = $o->hash;
+		}
+		
+		// Loop through the different image directories. And see if we should upload the files to RS.
+		foreach($this->css_file_dirs AS $key => $row)
+		{
+			echo "\n###### Reviewing - $row ######\n";
+		
+			$files = glob("$row/*.*");
+			foreach($files AS $key2 => $row2)
+			{
+				$name = basename($row2);
+			
+				// See if the file is already uploaded at Rackspace
+				if(isset($mdhash["assets/$key/" . $name]) && ($mdhash["assets/$key/" . $name] == md5_file($row2)))
+				{
+					continue;
+				}
+			
+				$this->rs_upload($row2, "assets/$key/$name", mime_content_type($row2));
+			}
+		}
 	}
 	
 	// -------------------- Framework Functions ----------------- //
