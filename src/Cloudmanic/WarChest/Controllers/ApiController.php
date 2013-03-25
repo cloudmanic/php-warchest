@@ -104,6 +104,49 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	}
 	
 	//
+	// Update.
+	//
+	public function update($id)
+	{							
+		// A hook before we go any further.
+		if(method_exists($this, '_before_validate'))
+		{
+		  $this->_before_validate();
+		}
+		
+		// Validate this request. 
+		if($rt = $this->validate_request('update'))
+		{
+			return $rt;
+		}
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_create_or_update'))
+		{
+		  $this->_before_create_or_update();
+		}
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_before_update'))
+		{
+		  $this->_before_update($id);
+		}
+		
+		// Load model and update data.
+		$m = $this->model; 
+		$data['Id'] = $id;
+		$m::update(Input::get(), $id);	
+		
+		// A hook before we go any further.
+		if(method_exists($this, '_after_update'))
+		{
+		  $this->_after_update($id);
+		}
+		
+		return $this->api_response($data);
+	}
+	
+	//
 	// Return a response based on the get "format" param.
 	//
 	public function api_response($data = null, $status = 1, $errors = NULL, $cust_errors = NULL)
@@ -155,7 +198,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	// Validate requests.
 	//
 	public function validate_request($type)
-	{			
+	{				
 		// A hook before we go any further.
 		if(method_exists($this, '_before_validation'))
 		{
