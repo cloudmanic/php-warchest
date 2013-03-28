@@ -250,7 +250,7 @@ class AcctModel extends Eloquent
 	// if a checkbox is not checked we do not POST it. So here
 	// we override it. 
 	//
-	private static function check_checked($data)
+	public static function check_checked($data)
 	{
 		if((! is_null(static::$checked)) && is_array(static::$checked))
 		{
