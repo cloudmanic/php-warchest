@@ -289,7 +289,7 @@ class BasicModel
 	private static function _set_data($data)
  	{
  		$q = array();
- 		$fields = DB::select('SHOW COLUMNS FROM ' . self::$_table);
+ 		$fields = DB::connection(static::$_connection)->select('SHOW COLUMNS FROM ' . self::$_table);
  		
  		foreach($fields AS $key => $row)
  		{ 
