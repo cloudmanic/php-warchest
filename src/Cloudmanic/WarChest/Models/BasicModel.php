@@ -175,7 +175,7 @@ class BasicModel
 	public static function get_by_id($id)
 	{
 		self::get_query();
-		self::set_col(self::$_table . 'Id', $id);
+		self::set_col(static::$_table . 'Id', $id);
 		$d = self::get();
 		$data = (isset($d[0])) ? (array) $d[0] : false;
 		self::clear_query();		
