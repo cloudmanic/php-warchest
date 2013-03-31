@@ -130,7 +130,7 @@ class BasicModel
 		$data = array();
 				
 		// Make sure we have a query started.
-		self::get_query();
+		static::get_query();
 		
 		// Do we have joins?
 		if(! is_null(static::$joins))
@@ -142,28 +142,23 @@ class BasicModel
 		}
 		
 		// Query
-		$data = self::get_query()->get();
+		$data = static::get_query()->get();
 		
 		// Convert to an array because we like arrays better.
-		$data = self::_obj_to_array($data);
+		$data = static::_obj_to_array($data);
 		
-		// Clear query.		
-		self::clear_query();
+		// Clear query.	
+		$table = static::$_table;
+		static::clear_query();
 		
 		// An option formatting function call.
-		if(method_exists(self::$_table, '_format_get'))
-		{
-			$new = array();
-			
+		if(method_exists($table, '_format_get'))
+		{	
 			// Loop through data and format.
 			foreach($data AS $key => $row)
 			{
-				$new[] = $row;
 				static::_format_get($data[$key]);
 			}
-			
-			// Return new formated data.
-			return $new;
 		}
 		
 		return $data;
@@ -174,11 +169,11 @@ class BasicModel
 	// 
 	public static function get_by_id($id)
 	{
-		self::get_query();
-		self::set_col(static::$_table . 'Id', $id);
-		$d = self::get();
+		static::get_query();
+		static::set_col(static::$_table . 'Id', $id);
+		$d = static::get();
 		$data = (isset($d[0])) ? (array) $d[0] : false;
-		self::clear_query();		
+		static::clear_query();		
 		return $data;
 	}
 	
