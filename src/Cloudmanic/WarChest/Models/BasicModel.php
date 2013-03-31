@@ -262,7 +262,8 @@ class BasicModel
 	//
 	protected static function clear_query()
 	{
-		self::$query = null;
+		static::$query = null;
+		static::$_table = null;
 	}
 	
 	//
@@ -271,15 +272,19 @@ class BasicModel
 	//
 	protected static function get_query()
 	{
-		if(is_null(self::$query))
+		if(is_null(static::$query))
 		{
-			$table = explode('\\', get_called_class());
-			self::$_table = end($table);
-			self::$query = DB::connection(static::$_connection)->table(self::$_table);
-			return self::$query;
+			if(is_null(static::$_table))
+			{
+				$table = explode('\\', get_called_class());
+				static::$_table = end($table);			
+			}
+			
+			static::$query = DB::connection(static::$_connection)->table(static::$_table);
+			return static::$query;
 		} else
 		{
-			return self::$query;
+			return static::$query;
 		}
 	}
 	
