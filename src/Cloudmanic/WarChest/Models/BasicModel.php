@@ -53,7 +53,7 @@ class BasicModel
 	//
 	public static function set_order($order, $sort = 'desc')
 	{
-		self::get_query()->order_by($order, $sort);
+		self::get_query()->orderBy($order, $sort);
 	}	
 	
 	//
