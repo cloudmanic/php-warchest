@@ -93,7 +93,7 @@ class BasicModel
 	//
 	public static function set_join($table, $left, $right)
 	{
-		self::get_query()->left_join($table, $left, '=', $right);
+		self::get_query()->join($table, $left, '=', $right);
 	}	
 	
 	//
