@@ -197,6 +197,16 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	}
 	
 	//
+	// Delete a record by id.
+	//
+	public function delete($_id)
+	{	
+		$m = $this->model;
+		$m::delete_by_id($_id);
+		return $this->api_response();
+	}
+	
+	//
 	// Return a response based on the get "format" param.
 	//
 	public function api_response($data = null, $status = 1, $errors = NULL, $cust_errors = NULL)
