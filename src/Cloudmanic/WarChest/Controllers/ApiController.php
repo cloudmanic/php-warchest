@@ -9,6 +9,8 @@
 
 namespace Cloudmanic\WarChest\Controllers;
 
+use Illuminate\Support\Facades\Request as Request;
+use Illuminate\Support\Facades\Cache as Cache;
 use Illuminate\Support\Facades\Input as Input;
 use Illuminate\Support\Facades\Response as Response;
 use Illuminate\Support\Facades\Validator as Validator;
@@ -16,6 +18,8 @@ use Illuminate\Support\Facades\Validator as Validator;
 class ApiController extends \Illuminate\Routing\Controllers\Controller
 {
 	public $model = '';
+	public $cached = false;
+	public $cached_time = 60;
 	public $no_auth = false;
 	public $rules_create = array();
 	public $rules_update = array();
@@ -35,13 +39,32 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	// Index (get).
 	//
 	public function index()
-	{			
+	{		
+		// Request hash.
+		$hash = 'api-' . md5(Request::getUri());
+	
+		// Is this a cached response?	
+		if($this->cached)
+		{
+			if($data = Cache::get($hash))
+			{
+				return $this->api_response($data);
+			}
+		}
+	
 		// Setup query. Apply any filters we might have passed in.
 		$this->_setup_query();
 		
 		// Load model and run the query.
 		$m = $this->model;		
 		$data = $m::get();	
+		
+		// Store the cache of this response
+		if($this->cached)
+		{
+			Cache::put($hash, $data, $this->cached_time);
+		}
+		
 		return $this->api_response($data);
 	}
 	
@@ -51,9 +74,27 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	public function id($_id)
 	{
+		// Request hash.
+		$hash = 'api-' . md5(Request::getUri());
+		
+		// Is this a cached response?	
+		if($this->cached)
+		{
+			if($data = Cache::get($hash))
+			{
+				return $this->api_response($data);
+			}
+		}
+	
 		$m = $this->model;
 		if($data = $m::get_by_id($_id))
 		{	
+			// Store the cache of this response
+			if($this->cached)
+			{
+				Cache::put($hash, $data, $this->cached_time);
+			}
+		
 			return $this->api_response($data);
 		} else
 		{
