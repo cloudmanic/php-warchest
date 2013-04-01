@@ -20,6 +20,7 @@ class BasicModel
 	private static $_with = array();
 	public static $_connection = 'mysql';
 	protected static $query = null;
+	protected static $_extra = 0;
 
 	
 	// ------------------------ Setters ------------------------------ //
@@ -111,6 +112,14 @@ class BasicModel
 	{
 		self::$_with = array();
 	}
+	
+	//
+	// Set extra
+	//
+	public static function set_extra($extra)
+	{
+		static::$_extra = $extra;
+	}	
 	
 	//
 	// Set search.

@@ -86,7 +86,16 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 			}
 		}
 	
+		// Set model
 		$m = $this->model;
+		
+		// Set extra
+		if(Input::get('extra'))
+		{
+			$m::set_extra(Input::get('extra'));
+		}
+		
+		// Run query.
 		if($data = $m::get_by_id($_id))
 		{	
 			// Store the cache of this response
@@ -334,6 +343,12 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		if(Input::get('search'))
 		{
 			$m::set_search(Input::get('search'));
+		}
+		
+		// Set extra
+		if(Input::get('extra'))
+		{
+			$m::set_extra(Input::get('extra'));
 		}
 	}
 	
