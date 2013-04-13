@@ -82,9 +82,15 @@ class BasicModel extends Eloquent
 	//
 	// Set join
 	//
-	public static function set_join($table, $left, $right)
+	public static function set_join($table, $left, $right, $type = 'inner')
 	{
-		self::get_query()->join($table, $left, '=', $right);
+		if($type == 'inner')
+		{
+			self::get_query()->join($table, $left, '=', $right);
+		} else if($type == 'left')
+		{
+			self::get_query()->left_join($table, $left, '=', $right);
+		}
 	}	
 	
 	//
@@ -128,7 +134,12 @@ class BasicModel extends Eloquent
 		{
 			foreach(static::$joins AS $key => $row)
 			{
-				static::set_join($row['table'], $row['left'], $row['right']);
+				if(! isset($row['type']))
+				{
+					$row['type'] = 'inner';
+				}
+				
+				static::set_join($row['table'], $row['left'], $row['right'], $row['type']);
 			}
 		}
 		
