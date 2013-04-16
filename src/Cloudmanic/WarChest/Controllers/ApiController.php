@@ -242,6 +242,10 @@ class ApiController extends \Laravel\Routing\Controller
 				return '<pre>' . print_r($rt, TRUE) . '</pre>';
 			break;
 			
+			case 'data':
+				return $rt;
+			break;
+			
 			default:
 				return Response::json($rt);
 			break;
@@ -273,6 +277,19 @@ class ApiController extends \Laravel\Routing\Controller
 				{
 					$col = str_replace('col_', '', $row);
 					$m::set_col($col, Input::get($row));
+				}
+			}
+		}
+		
+		// Select custom functions
+		foreach($cols AS $key => $row)
+		{
+			if(preg_match('/^(cust_)/', $row))
+			{
+				if(Input::get($row))
+				{
+					$cust = str_replace('cust_', '', $row);					
+					$m::{"set_custom_$cust"}(Input::get($row));
 				}
 			}
 		}
@@ -311,6 +328,18 @@ class ApiController extends \Laravel\Routing\Controller
 		if(Input::get('search'))
 		{
 			$m::set_search(Input::get('search'));
+		}
+		
+		// Set start....
+		if(Input::get('start'))
+		{
+			$m::set_start(Input::get('start'));
+		}
+		
+		// Set end....
+		if(Input::get('end'))
+		{
+			$m::set_end(Input::get('end'));
 		}
 	}
 	
