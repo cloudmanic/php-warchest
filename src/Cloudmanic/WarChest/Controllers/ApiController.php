@@ -289,7 +289,8 @@ class ApiController extends \Laravel\Routing\Controller
 				if(Input::get($row))
 				{
 					$cust = str_replace('cust_', '', $row);					
-					$m::{"set_custom_$cust"}(Input::get($row));
+					$f = "set_custom_$cust";
+					$m::$f(Input::get($row));
 				}
 			}
 		}
