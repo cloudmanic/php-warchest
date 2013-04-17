@@ -53,14 +53,17 @@ class Deploy
 		$this->combine_js();
 		$this->rs_file_sync();
 		$this->build_prod_css_js();
+		
+		// Add combined file.
+		exec("git add ../application/views/layouts/app-prod-css-js.php");
 	
 		// Delete any files from git repo.
-		$this->delete_files_from_commit();
+		//$this->delete_files_from_commit();
 	
 		// Commit any changes
 		echo "\n###### GIT Commiting #####\n";
 		$comment = 'Deploy commit - ' . time() . ' - ' . exec("whoami") . ' - ' . exec("hostname");
-		echo exec("cd $this->app_path && git push origin $this->branch && cd scripts") . "\n";
+		echo exec("cd $this->app_path && git commit -m '$comment' && git push origin $this->branch && cd scripts") . "\n";
 		//echo exec("cd $this->app_path && git add . && git commit -m '$comment' && git push origin $this->branch && cd scripts") . "\n";
 		
 		// Deploy to the servers.
@@ -142,6 +145,7 @@ class Deploy
 			}
 		}
 		
+		
 		// If we have any new JS we build a new hash file for the JS.
 		$hash = md5($master_css);
 		if(! is_file("$this->public_cache/$hash.css"))
@@ -153,6 +157,7 @@ class Deploy
 			// Upload to rackspace.
 			echo "\n###### Uploading Combined JS To Rackspace ######\n";
 			$this->rs_upload("$this->public_cache/$hash.css", "assets/css/$hash.css", 'text/css');
+			//exec("git add $this->public_cache/$hash.css");
 		}
 		
 		// Add CSS to the prod list. 
@@ -190,6 +195,8 @@ class Deploy
 			echo "\n###### Compressing JS File ######\n";
 			exec("$this->uglifyjs $this->public_cache/$hash.js -m -o $this->public_cache/$hash.min.js");
 			unlink("$this->public_cache/$hash.js");
+			
+			//exec("git add $this->public_cache/$hash.min.js");
 			
 			// Upload to rackspace.
 			echo "\n###### Uploading Combined JS To Rackspace ######\n";
