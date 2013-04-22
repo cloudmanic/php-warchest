@@ -56,6 +56,14 @@ class AcctModel extends Eloquent
 	}
 	
 	//
+	// Set Not Column.
+	//
+	public static function set_not_col($key, $value)
+	{
+		self::get_query()->where($key, '!=', $value);
+	}
+	
+	//
 	// Set Column OR.
 	//
 	public static function set_or_col($key, $value)
