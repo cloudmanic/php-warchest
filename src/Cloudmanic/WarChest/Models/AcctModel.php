@@ -88,6 +88,14 @@ class AcctModel extends Eloquent
 	}
 	
 	//
+	// Set Where In
+	//
+	public static function set_where_in($col, $list)
+	{
+		self::get_query()->where_in($col, $list);
+	}
+	
+	//
 	// Set Columns to select.
 	//
 	public static function set_select($selects)
