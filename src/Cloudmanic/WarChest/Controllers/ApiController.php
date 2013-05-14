@@ -295,7 +295,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	// Setup the query. Apply any filters we might have passed in.
 	//
-	private function _setup_query()
+	public function _setup_query()
 	{
 		$m = $this->model;
 	
