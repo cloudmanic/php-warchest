@@ -39,7 +39,7 @@ class Deploy
 		// Commit any changes
 		echo "\n###### GIT Commiting #####\n";
 		$comment = 'Deploy commit - ' . time() . ' - ' . exec("whoami") . ' - ' . exec("hostname");
-		echo exec("cd $this->app_path && git add . && git commit -m '$comment' && git push origin $this->branch && cd scripts") . "\n";
+		echo shell_exec("cd $this->app_path && git add . && git commit -m '$comment' && git push origin $this->branch && cd scripts") . "\n";
 		
 		// Deploy to the servers.
 		foreach($this->hosts AS $key => $row)
@@ -48,10 +48,10 @@ class Deploy
 			
 			if($this->laravel_migrate)
 			{
-				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php artisan migrate && composer.phar update && cd scripts && php pkgs.php'") . "\n\n";
+				echo shell_exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php artisan migrate && composer.phar update && cd scripts && php pkgs.php'") . "\n\n";
 			} else
 			{
-				echo exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && composer.phar update && cd scripts && php pkgs.php'") . "\n\n";				
+				echo shell_exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && composer.phar update && cd scripts && php pkgs.php'") . "\n\n";				
 			}
 		}
 		
@@ -66,7 +66,7 @@ class Deploy
 	{
 		echo "\n###### GIT Deleting #####\n";
 		
-		$ob = exec("cd $this->app_path && git status | grep deleted");
+		$ob = shell_exec("cd $this->app_path && git status | grep deleted");
 		$files = explode("\n", $ob);
 		
 		foreach($files AS $key => $row)
@@ -77,7 +77,7 @@ class Deploy
 			}	
 		
 			$file = str_ireplace('#	deleted:    ', '', $row);
-			exec("cd $this->app_path && git rm '$file'");
+			shell_exec("cd $this->app_path && git rm '$file'");
 		} 
 	}
 }
