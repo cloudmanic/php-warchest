@@ -209,14 +209,42 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	// Return a response based on the get "format" param.
 	//
-	public function api_response($data = null, $status = 1, $errors = NULL, $cust_errors = NULL)
+	public function api_response($data = null, $status = 1, $errors = NULL, $cust_errors = NULL, $summary = true)
 	{	
 		// Setup the return array
+		$m = $this->model;
 		$rt = array();
 		$rt['status'] = $status;
 		$rt['data'] = (! is_null($data)) ? $data : array();
-		$rt['filtered'] = 0;
-		$rt['total'] = 0;
+		$rt['count'] = count($rt['data']);
+		
+		// Sometimes we do not want to include all this summary information.
+		if($summary)
+		{
+			$rt['filtered'] = 0;
+			$rt['total'] = ($rt['data']) ? $m::get_count() : 0;
+			$rt['offset'] = (\Input::get('offset')) ? \Input::get('offset') : 0;
+			$rt['limit'] = (\Input::get('limit')) ? \Input::get('limit') : 0;
+			$rt['range_start'] = 1;
+			$rt['range_end'] = $rt['count'];
+			
+			// Get the pageination.
+			if($rt['limit'])
+			{
+				$this->_setup_query(false);
+				$rt['filtered'] = $m::get_count();
+				
+				$rt['range_start'] = $rt['offset'] + 1;
+				
+				if(($rt['offset'] + $rt['limit']) < $rt['filtered'])
+				{
+					$rt['range_end'] = ($rt['offset'] + $rt['limit']);
+				} else
+				{
+					$rt['range_end'] = $rt['filtered'];
+				}
+			} 
+		}		
 		
 		// Set errors.
 		if(is_null($errors))
@@ -232,7 +260,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		} else
 		{
 			// Format the errors
-			foreach(Input::get() AS $key => $row)
+			foreach(Input::all() AS $key => $row)
 			{
 			  if($errors->has($key))
 			  {
@@ -246,6 +274,15 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		{
 			case 'php':
 				return '<pre>' . print_r($rt, TRUE) . '</pre>';
+			break;
+			
+			case 'jsonp':
+				if(Input::get('callback'))
+				{
+				  return Input::get('callback') . '(' . json_encode($rt) . ')';
+				}
+		
+				return 'callback(' . json_encode($rt) . ')';
 			break;
 			
 			default:
