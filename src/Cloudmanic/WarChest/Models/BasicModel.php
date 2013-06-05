@@ -250,6 +250,25 @@ class BasicModel
 		self::clear_query();
 	}
 	
+	//
+	// Get count.
+	//
+	public static function get_count()
+	{
+		// Do we have joins?
+		if(! is_null(static::$joins))
+		{
+			foreach(static::$joins AS $key => $row)
+			{
+				static::set_join($row['table'], $row['left'], $row['right']);
+			}
+		}
+	
+		$count = self::get_query()->count();
+		self::clear_query();
+		return $count; 
+	}
+	
 	// ----------------- Helper Function  -------------- //
 	
 	//
