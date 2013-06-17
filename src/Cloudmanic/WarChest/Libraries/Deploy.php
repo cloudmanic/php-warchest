@@ -22,6 +22,7 @@ class Deploy
 	public $css_js_file_prod = '../app/views/layouts/app-prod-css-js.php';
 	public $uglifyjs = '../vendor/cloudmanic/php-warchest/src/Cloudmanic/WarChest/scripts/libs/node_modules/uglify-js/bin/uglifyjs';
 	public $public_cache = '../public/cache';
+	public $composer_cmd = 'composer.phar update &&';
 	public $app_path = '../';
 	public $laravel_migrate = true;
 	public $cdn_key = '';
@@ -89,21 +90,17 @@ class Deploy
 	//
 	public function delete_files_from_commit()
 	{
-		echo "\n###### GIT Deleting #####\n";
-		
-		$ob = exec("cd $this->app_path && git status | grep deleted");
-		$files = explode("\n", $ob);
-		
-		foreach($files AS $key => $row)
-		{
-			if(empty($row))
+			echo "\n#### Deploying $row #####\n";
+			
+			if($this->laravel_migrate)
 			{
-				continue;
-			}	
-		
-			$file = str_ireplace('#	deleted:    ', '', $row);
-			exec("cd $this->app_path && git rm '$file'");
-		} 
+				exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && php artisan migrate && $this->$composer_cmd cd scripts && php pkgs.php'" . ' 2>&1', $output, $return);
+			} else
+			{
+				exec("ssh -p $this->ssh_port $row 'cd $this->remote_dir && git pull origin $this->branch && $this->$composer_cmd cd scripts && php pkgs.php'". ' 2>&1', $output, $return);				
+			}
+			
+			echo "\n\n $output \n\n";
 	}
 	
 	// --------------- Deploy Functions ------------------- //
