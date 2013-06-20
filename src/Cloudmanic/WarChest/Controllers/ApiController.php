@@ -38,8 +38,11 @@ class ApiController extends \Laravel\Routing\Controller
 		$this->filter('before', $this->before_filter);
 		
 		// Guess the model.
-		$tmp = explode('_', get_called_class()); 
-		$this->model = $tmp[2];
+		if(empty($this->model))
+		{
+			$tmp = explode('_', get_called_class()); 
+			$this->model = $tmp[2];
+		}
 	}
 
 	//
@@ -239,6 +242,10 @@ class ApiController extends \Laravel\Routing\Controller
 				return '<pre>' . print_r($rt, TRUE) . '</pre>';
 			break;
 			
+			case 'data':
+				return $rt;
+			break;
+			
 			default:
 				return Response::json($rt);
 			break;
@@ -270,6 +277,20 @@ class ApiController extends \Laravel\Routing\Controller
 				{
 					$col = str_replace('col_', '', $row);
 					$m::set_col($col, Input::get($row));
+				}
+			}
+		}
+		
+		// Select custom functions
+		foreach($cols AS $key => $row)
+		{
+			if(preg_match('/^(cust_)/', $row))
+			{
+				if(Input::get($row))
+				{
+					$cust = str_replace('cust_', '', $row);					
+					$f = "set_custom_$cust";
+					$m::$f(Input::get($row));
 				}
 			}
 		}
@@ -308,6 +329,18 @@ class ApiController extends \Laravel\Routing\Controller
 		if(Input::get('search'))
 		{
 			$m::set_search(Input::get('search'));
+		}
+		
+		// Set start....
+		if(Input::get('start'))
+		{
+			$m::set_start(Input::get('start'));
+		}
+		
+		// Set end....
+		if(Input::get('end'))
+		{
+			$m::set_end(Input::get('end'));
 		}
 	}
 	

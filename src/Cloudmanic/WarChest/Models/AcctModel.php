@@ -56,6 +56,14 @@ class AcctModel extends Eloquent
 	}
 	
 	//
+	// Set Not Column.
+	//
+	public static function set_not_col($key, $value)
+	{
+		self::get_query()->where($key, '!=', $value);
+	}
+	
+	//
 	// Set Column OR.
 	//
 	public static function set_or_col($key, $value)
@@ -77,6 +85,14 @@ class AcctModel extends Eloquent
 	public static function set_or_where_in($col, $list)
 	{
 		self::get_query()->or_where_in($col, $list);
+	}
+	
+	//
+	// Set Where In
+	//
+	public static function set_where_in($col, $list)
+	{
+		self::get_query()->where_in($col, $list);
 	}
 	
 	//

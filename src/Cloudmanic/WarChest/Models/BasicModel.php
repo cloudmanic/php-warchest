@@ -18,6 +18,7 @@ class BasicModel extends Eloquent
 {	
 	public static $joins = null;
 	public static $with = array();
+	public static $datetimes = array();
 	protected static $query = null;
 	
 	// ------------------------ Setters ------------------------------ //
@@ -55,6 +56,14 @@ class BasicModel extends Eloquent
 	}
 	
 	//
+	// Set Not Column.
+	//
+	public static function set_not_col($key, $value)
+	{
+		self::get_query()->where($key, '!=', $value);
+	}
+	
+	//
 	// Set Column OR.
 	//
 	public static function set_or_col($key, $value)
@@ -71,6 +80,14 @@ class BasicModel extends Eloquent
 	}
 	
 	//
+	// Set Where In
+	//
+	public static function set_where_in($col, $list)
+	{
+		self::get_query()->where_in($col, $list);
+	}
+	
+	//
 	// Set Columns to select.
 	//
 	public static function set_select($selects)
@@ -81,9 +98,15 @@ class BasicModel extends Eloquent
 	//
 	// Set join
 	//
-	public static function set_join($table, $left, $right)
+	public static function set_join($table, $left, $right, $type = 'inner')
 	{
-		self::get_query()->left_join($table, $left, '=', $right);
+		if($type == 'inner')
+		{
+			self::get_query()->join($table, $left, '=', $right);
+		} else if($type == 'left')
+		{
+			self::get_query()->left_join($table, $left, '=', $right);
+		}
 	}	
 	
 	//
@@ -127,7 +150,12 @@ class BasicModel extends Eloquent
 		{
 			foreach(static::$joins AS $key => $row)
 			{
-				static::set_join($row['table'], $row['left'], $row['right']);
+				if(! isset($row['type']))
+				{
+					$row['type'] = 'inner';
+				}
+				
+				static::set_join($row['table'], $row['left'], $row['right'], $row['type']);
 			}
 		}
 		
@@ -173,11 +201,9 @@ class BasicModel extends Eloquent
 		// Make sure we have a query started.
 		self::get_query();
 	
-		// Add created at date
- 		if(! isset($data[self::$table . 'CreatedAt'])) 
- 		{
- 			$data[self::$table  . 'CreatedAt'] = date('Y-m-d G:i:s');
- 		}
+		// Add created / updated at date
+		$data[self::$table  . 'CreatedAt'] = date('Y-m-d G:i:s');
+		$data[self::$table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
 	
  		// Insert the data / clear the query and return the ID.
  		$id = self::get_query()->insert_get_id(self::_set_data($data));
@@ -190,6 +216,7 @@ class BasicModel extends Eloquent
 	//
 	public static function update($data, $id)
 	{	
+		$data[self::$table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
 		$rt = self::get_query()->where(self::$table . 'Id', '=', $id)->update(self::_set_data($data));
 		self::clear_query();
 		return $rt;
@@ -267,9 +294,15 @@ class BasicModel extends Eloquent
  			if(isset($data[$row->Field])) 
  			{
  				$q[$row->Field] = $data[$row->Field];
+ 				
+ 				// Set MYSQL date.
+ 				if(in_array($row->Field, static::$datetimes))
+ 				{
+	 				$q[$row->Field] = date('Y-m-d G:i:s', strtotime($q[$row->Field]));
+ 				}
  			}
  		}
- 		
+ 		 		
  		return $q;
  	}
 }
