@@ -10,17 +10,46 @@
 
 namespace Cloudmanic\WarChest\Models;
 
-use \DB as DB;
-use \Config as Config;
-use \Eloquent as Eloquent;
-use \Cloudmanic\WarChest\Libraries\Me as Me;
+use Illuminate\Support\Facades\DB;
+use \Config;
+use Cloudmanic\WarChest\Libraries\Me;
 
-class AcctModel extends Eloquent
+class AcctModel
 {	
 	public static $joins = null;
+	public static $_table = null;
+	public static $connection = 'mysql';
+	public static $delete_log = false;
 	protected static $query = null;
+	protected static $_extra = true;
+	private static $_with = array();
 	
 	// ------------------------ Setters ------------------------------ //
+
+	//
+	// Make it so it does not load the other models.
+	//
+	public static function set_no_extra()
+	{
+		self::$_extra = false;
+	}
+	
+	//
+	// We want all the extra data.
+	//
+	public static function set_extra()
+	{
+		self::$_extra = true;
+	}
+ 
+ 	//
+ 	// Set since a particular date.
+ 	//
+ 	public static function set_since($timestamp)
+ 	{
+	 	$stamp = date('Y-m-d H:i:s', strtotime($timestamp));
+	 	self::get_query()->where(static::$_table . 'UpdatedAt', '>=', $stamp);
+ 	}
 
 	//
 	// Set limit
@@ -43,15 +72,15 @@ class AcctModel extends Eloquent
 	//
 	public static function set_order($order, $sort = 'desc')
 	{
-		self::get_query()->order_by($order, $sort);
+		self::get_query()->orderBy($order, $sort);
 	}	
 	
 	//
 	// Set Column.
 	//
-	public static function set_col($key, $value)
+	public static function set_col($key, $value, $action = '=')
 	{
-		self::get_query()->where($key, '=', $value);
+		self::get_query()->where($key, $action, $value);
 	}
 	
 	//
@@ -59,16 +88,8 @@ class AcctModel extends Eloquent
 	//
 	public static function set_or_col($key, $value)
 	{
-		self::get_query()->or_where($key, '=', $value);
+		self::get_query()->orWhere($key, '=', $value);
 	}
-	
-	// 
-	// Set Like.
-	//
-	public static function set_like_col($key, $value)
-	{
-		self::get_query()->where($key, 'LIKE', '%' . $value . '%');
-	}	
 	
 	//
 	// Set Or Where In
@@ -91,9 +112,25 @@ class AcctModel extends Eloquent
 	//
 	public static function set_join($table, $left, $right)
 	{
-		self::get_query()->left_join($table, $left, '=', $right);
+		self::get_query()->join($table, $left, '=', $right);
 	}	
-
+	
+	//
+	// Set with
+	//
+	public static function set_with($with)
+	{
+		self::$_with[] = $with;
+	}	
+	
+	//
+	// Clear with
+	//
+	public static function clear_with()
+	{
+		self::$_with = array();
+	}
+	
 	//
 	// Set search.
 	//
@@ -101,7 +138,7 @@ class AcctModel extends Eloquent
 	{
 		// Place holder we should override this.
 	}
-	
+
 	// ------------------------ CRUD Functions ----------------------- //
 	
 	//
@@ -124,21 +161,39 @@ class AcctModel extends Eloquent
 		}
 		
 		// Set the account.
-		self::set_col(self::$table . 'AccountId', Me::get_account_id());
+		self::set_col(static::$_table . 'AccountId', Me::get_account_id());
 		
 		// Query
-		$d = self::get_query()->get();
+		$data = self::get_query()->get();
 		
-		// Clear query.		
-		self::clear_query();
+		// Convert to an array because we like arrays better.
+		$data = static::_obj_to_array($data);
 		
-		// Loop through data and format.
-		foreach($d AS $key => $row)
+		// Clear query.	
+		$table = static::$_table;
+		static::clear_query();
+		
+		// Remove any unwanted columns.
+		if(isset(static::$remove) && is_array(static::$remove))
 		{
-			$data[] = $row->to_array();
-			
-			// An option formatting function call.
-			if(method_exists(self::$table, '_format_get'))
+			// Loop through data and format.
+			foreach($data AS $key => $row)
+			{
+				foreach($row AS $key2 => $row2)
+				{
+					if(in_array($key2, static::$remove))
+					{
+						unset($data[$key][$key2]);
+					}
+				}
+			}
+		}
+		
+		// An option formatting function call.
+		if(method_exists($table, '_format_get'))
+		{	
+			// Loop through data and format.
+			foreach($data AS $key => $row)
 			{
 				static::_format_get($data[$key]);
 			}
@@ -152,17 +207,11 @@ class AcctModel extends Eloquent
 	// 
 	public static function get_by_id($id)
 	{
-		// Make sure we have a query started.
 		self::get_query();
-		
-		// Set Id Column. 
-		self::set_col(self::$table . 'Id', $id);
-		
-		// Get the data.
+		self::set_col(self::$_table . 'Id', $id);
 		$d = self::get();
 		$data = (isset($d[0])) ? (array) $d[0] : false;
 		self::clear_query();		
-		
 		return $data;
 	}
 	
@@ -174,17 +223,23 @@ class AcctModel extends Eloquent
 		// Make sure we have a query started.
 		self::get_query();
 	
-		// Add created at date
- 		if(! isset($data[self::$table . 'CreatedAt'])) 
+		// Add updated at date
+ 		if(! isset($data[self::$_table . 'UpdatedAt'])) 
  		{
- 			$data[self::$table  . 'CreatedAt'] = date('Y-m-d G:i:s');
+ 			$data[self::$_table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
  		}
-	
+ 		
+		// Add created at date
+ 		if(! isset($data[self::$_table . 'CreatedAt'])) 
+ 		{
+ 			$data[self::$_table  . 'CreatedAt'] = date('Y-m-d G:i:s');
+ 		}
+ 		
 		// Set the account.
-		$data[self::$table . 'AccountId'] = Me::get_account_id();
+		$data[self::$_table . 'AccountId'] = Me::get_account_id();
 	
  		// Insert the data / clear the query and return the ID.
- 		$id = self::get_query()->insert_get_id(self::_set_data($data));
+ 		$id = self::get_query()->insertGetId(self::_set_data($data));
  		self::clear_query();
  		return $id;
 	}
@@ -197,11 +252,19 @@ class AcctModel extends Eloquent
 		// Make sure we have a query started.
 		self::get_query();
 	
-		// Set the account.
-		self::set_col(self::$table . 'AccountId', Me::get_account_id());
-		
-		$rt = self::get_query()->where(self::$table . 'Id', '=', $id)->update(self::_set_data($data));
+		// Add updated at date
+ 		if(! isset($data[self::$_table . 'UpdatedAt'])) 
+ 		{
+ 			$data[self::$_table  . 'UpdatedAt'] = date('Y-m-d G:i:s');
+ 		}
+ 		
+ 		// Set the account.
+		self::set_col(self::$_table . 'AccountId', Me::get_account_id());
+	
+ 		// Run and clear query.
+		$rt = self::get_query()->where(self::$_table . 'Id', '=', $id)->update(self::_set_data($data));
 		self::clear_query();
+		
 		return $rt;
 	}	
 
@@ -214,11 +277,21 @@ class AcctModel extends Eloquent
 		self::get_query();
 		
 		// Set the account.
-		self::set_col(self::$table . 'AccountId', Me::get_account_id());
+		self::set_col(self::$_table . 'AccountId', Me::get_account_id());
 		
  		// Delete entry and clear query.
-		self::get_query()->where(self::$table . 'Id', '=', $id)->delete();
+ 		$table = self::$_table;
+		self::get_query()->where(self::$_table . 'Id', '=', $id)->delete();
 		self::clear_query();
+		
+		// Do we add this to the delete log.
+		if(static::$delete_log)
+		{
+			\DeleteLog::insert(array(
+				'DeleteLogTable' => $table,
+				'DeleteLogTableId' => $id
+			));
+		}
 	}
 	
 	//
@@ -226,24 +299,62 @@ class AcctModel extends Eloquent
 	//
 	public static function delete_all()
 	{
-		// Make sure we have a query started.
-		self::get_query();
-		
 		// Set the account.
-		self::set_col(self::$table . 'AccountId', Me::get_account_id());
-		
+		self::set_col(self::$_table . 'AccountId', Me::get_account_id());
+	
 		self::get_query()->delete();
 		self::clear_query();
 	}
 	
+	//
+	// Get count.
+	//
+	public static function get_count()
+	{
+		// Do we have joins?
+		if(! is_null(static::$joins))
+		{
+			foreach(static::$joins AS $key => $row)
+			{
+				static::set_join($row['table'], $row['left'], $row['right']);
+			}
+		}
+	
+		$count = self::get_query()->count();
+		self::clear_query();
+		return $count; 
+	}
+	
 	// ----------------- Helper Function  -------------- //
+		
+ 	//
+ 	// Convert the object the database returns to an array.
+ 	// Yes, PDO can return arrays, but Laravel really counts
+ 	// on objects instead of arrays.
+ 	//
+ 	private static function _obj_to_array($data)
+ 	{
+	 	if(is_array($data) || is_object($data))
+	 	{
+		 	$result = array();
+		 	foreach($data as $key => $value)
+		 	{
+			 	$result[$key] = self::_obj_to_array($value);
+			}
+
+			return $result;
+		}
+    
+		return $data;
+	}
 	
 	//
 	// Get last query.
 	//
 	public static function get_last_query()
 	{
-		return end(DB::profile());
+		$queries = DB::getQueryLog();
+		return end($queries);
 	}
 	
 	//
@@ -252,24 +363,29 @@ class AcctModel extends Eloquent
 	//
 	protected static function clear_query()
 	{
-		self::$query = null;
+		static::$query = null;
+		static::$_table = null;
 	}
 	
 	//
 	// If we have a query already under way return it. If not 
 	// build the query and return a new object.
-	//
+	//	
 	protected static function get_query()
 	{
-		if(is_null(self::$query))
+		if(is_null(static::$query))
 		{
-			$table = explode('\\', get_called_class());
-			self::$table = end($table);
-			self::$query = new \Laravel\Database\Eloquent\Query(self::$table);
-			return self::$query;
+			if(is_null(static::$_table))
+			{
+				$table = explode('\\', get_called_class());
+				static::$_table = end($table);			
+			}
+			
+			static::$query = DB::connection(static::$connection)->table(static::$_table);
+			return static::$query;
 		} else
 		{
-			return self::$query;
+			return static::$query;
 		}
 	}
 	
@@ -279,7 +395,7 @@ class AcctModel extends Eloquent
 	private static function _set_data($data)
  	{
  		$q = array();
- 		$fields = DB::query('SHOW COLUMNS FROM ' . self::$table);
+ 		$fields = DB::connection(static::$connection)->select('SHOW COLUMNS FROM ' . static::$_table);
  		
  		foreach($fields AS $key => $row)
  		{ 
