@@ -260,7 +260,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		} else
 		{
 			// Format the errors
-			foreach(Input::all() AS $key => $row)
+			foreach($errors->toArray() AS $key => $row)
 			{
 			  if($errors->has($key))
 			  {
