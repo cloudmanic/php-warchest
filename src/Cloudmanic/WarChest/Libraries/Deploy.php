@@ -52,7 +52,7 @@ class Deploy
 		// Minify the CSS / JS
 		$this->combine_css();
 		$this->combine_js();
-		$this->rs_file_sync();
+		//$this->rs_file_sync();
 		$this->build_prod_css_js();
 		
 		// Add combined file.
