@@ -52,7 +52,7 @@ class Deploy
 		// Minify the CSS / JS
 		$this->combine_css();
 		$this->combine_js();
-		$this->rs_file_sync();
+		//$this->rs_file_sync();
 		$this->build_prod_css_js();
 		
 		// Add combined file.
@@ -216,14 +216,16 @@ class Deploy
 	{
 		$connection = new \OpenCloud\Rackspace(RACKSPACE_US, array('username' => $this->cdn_user, 'apiKey' => $this->cdn_key));
 		
-		$ostore = $connection->ObjectStore();
+		$ostore = $connection->objectStoreService();
 		
-		$cont = $ostore->Container($this->cdn_container);
+		$cont = $ostore->getContainer($this->cdn_container);
 		
-		$obj = $cont->DataObject();
+		$data = fopen($file, 'r+');
+		$cont->uploadObject($name, $data, [
+			'Content-Type' => mime_content_type($info['full_path'])
+		]);		
 		
 		echo "\n# Uploading:  $file \n";
-		$obj->Create(array('name' => $name, 'content_type' => $type), $file);
 	}
 	
 	//
@@ -236,14 +238,15 @@ class Deploy
 		// Build a hash of all the files currently at rackspace.
 		$connection = new \OpenCloud\Rackspace(RACKSPACE_US, array('username' => $this->cdn_user, 'apiKey' => $this->cdn_key));
 		
-		$ostore = $connection->ObjectStore();
+		$ostore = $connection->objectStoreService();
 		
-		$cont = $ostore->Container($this->cdn_container);
+		$cont = $ostore->getContainer($this->cdn_container);
 		
-		$list = $cont->ObjectList();
+		$list = $cont->objectList(array('prefix' => 'assets'));
 		$mdhash = array();
-		while($o = $list->Next())
+		while($o = $list->next())
 		{
+			$file = $cont->getObject($o->getName());
 			$mdhash[$o->name] = $o->hash;
 		}
 		
