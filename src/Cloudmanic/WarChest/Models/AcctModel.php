@@ -50,9 +50,9 @@ class AcctModel extends Eloquent
 	//
 	// Set Column.
 	//
-	public static function set_col($key, $value)
+	public static function set_col($key, $value, $type = '=')
 	{
-		self::get_query()->where($key, '=', $value);
+		self::get_query()->where($key, $type, $value);
 	}
 	
 	//
