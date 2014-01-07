@@ -15,12 +15,14 @@ use Illuminate\Support\Facades\Input as Input;
 use Illuminate\Support\Facades\Response as Response;
 use Illuminate\Support\Facades\Validator as Validator;
 
-class ApiController extends \Illuminate\Routing\Controllers\Controller
+class ApiController extends \Illuminate\Routing\Controller
 {
-	public $model = '';
+	public $model = null;
 	public $cached = false;
 	public $cached_time = 60;
 	public $no_auth = false;
+	public $accept_update = null;
+	public $accept_insert = null;
 	public $rules_create = array();
 	public $rules_update = array();
 	public $rules_message = array();
@@ -31,8 +33,11 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	public function __construct()
 	{		
 		// Guess the model.
-		$tmp = explode('\\', get_called_class()); 		
-		$this->model = end($tmp);
+		if(is_null($this->model))
+		{
+			$tmp = explode('\\', get_called_class()); 		
+			$this->model = end($tmp);
+		}
 	}
 	
 	//
@@ -56,8 +61,9 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		$this->_setup_query();
 		
 		// Load model and run the query.
-		$m = $this->model;		
-		$data = $m::get();	
+		$m = $this->model;
+		$m::set_api(true);		
+		$data = $m::get();
 		
 		// Store the cache of this response
 		if($this->cached)
@@ -88,6 +94,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	
 		// Set model
 		$m = $this->model;
+		$m::set_api(true);	
 		
 		// Set extra
 		if(Input::get('extra'))
@@ -140,9 +147,19 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		  $this->_before_insert();
 		}
 		
+		// Set the input that we accept. 
+		if($this->accept_insert)
+		{
+			$input = Input::only(implode(',', $this->accept_insert));
+		} else
+		{
+			$input = Input::get();
+		}
+		
 		// Load model and insert data.
 		$m = $this->model;
-		$data['Id'] = $m::insert(Input::get());	
+		$m::set_api(true);
+		$data['Id'] = $m::insert($input);	
 		
 		// A hook before we go any further.
 		if(method_exists($this, '_after_insert'))
@@ -182,10 +199,20 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		  $this->_before_update($id);
 		}
 		
+		// Set the input that we accept. 
+		if($this->accept_update)
+		{
+			$input = Input::only($this->accept_update);
+		} else
+		{
+			$input = Input::get();
+		}
+		
 		// Load model and update data.
-		$m = $this->model; 
+		$m = $this->model;
+		$m::set_api(true); 
 		$data['Id'] = $id;
-		$m::update(Input::get(), $id);	
+		$m::update($input, $id);	
 		
 		// A hook before we go any further.
 		if(method_exists($this, '_after_update'))
@@ -199,9 +226,16 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	// Delete a record by id.
 	//
-	public function delete($_id)
+	public function delete($_id = null)
 	{	
+		// So we can support posts as well.
+		if(is_null($_id))
+		{
+			$_id = Input::get('Id');
+		}
+	
 		$m = $this->model;
+		$m::set_api(true);
 		$m::delete_by_id($_id);
 		return $this->api_response();
 	}
@@ -213,10 +247,11 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	{	
 		// Setup the return array
 		$m = $this->model;
-		$rt = array();
+		$rt = [];
 		$rt['status'] = $status;
-		$rt['data'] = (! is_null($data)) ? $data : array();
+		$rt['data'] = (! is_null($data)) ? $data : [];
 		$rt['count'] = count($rt['data']);
+		$rt['errors'] = [];
 		
 		// Sometimes we do not want to include all this summary information.
 		if($summary)
@@ -227,6 +262,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 			$rt['limit'] = (\Input::get('limit')) ? \Input::get('limit') : 0;
 			$rt['range_start'] = 1;
 			$rt['range_end'] = $rt['count'];
+			$rt['hash'] = md5(json_encode($data));
 			
 			// Get the pageination.
 			if($rt['limit'])
@@ -252,7 +288,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 			// See if we passed in any custom errors.
 			if(is_null($cust_errors))
 			{
-				$rt['errors'] = array();
+				$rt['errors'] = [];
 			} else
 			{
 				$rt['errors'] = $cust_errors;
@@ -260,13 +296,19 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		} else
 		{
 			// Format the errors
-			foreach($errors->toArray() AS $key => $row)
+			foreach(Input::all() AS $key => $row)
 			{
 			  if($errors->has($key))
 			  {
-			    $rt['errors'][] = array('field' => $key, 'error' => $errors->first($key, ':message'));
+			    $rt['errors'][] = [ 'field' => $key, 'error' => $errors->first($key, ':message') ];
 			  }
 			}
+		}
+		
+		// Sometimes we just want to return just the hash of the data.
+		if(Input::get('only_hash') && isset($rt['hash']))
+		{
+			$rt = [ 'status' => 1, 'hash' => $rt['hash'] ];
 		}
 		
 		// Format the return in the output passed in.
@@ -332,7 +374,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	// Setup the query. Apply any filters we might have passed in.
 	//
-	public function _setup_query()
+	private function _setup_query($limit = true)
 	{
 		$m = $this->model;
 	
@@ -348,7 +390,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		{
 			if(preg_match('/^(col_)/', $row))
 			{
-				if(Input::get($row))
+				if(Input::get($row) || (Input::get($row) == '0'))
 				{
 					$col = str_replace('col_', '', $row);
 					$m::set_col($col, Input::get($row));
@@ -375,13 +417,13 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 		}
 		
 		// Set limit...
-		if(Input::get('limit'))
+		if($limit && Input::get('limit'))
 		{
 			$m::set_limit(Input::get('limit'));
 		}
 		
 		// Set offset...
-		if(Input::get('offset') && Input::get('limit'))
+		if($limit && Input::get('offset') && Input::get('limit'))
 		{
 			$m::set_offset(Input::get('offset'));
 		}
@@ -418,7 +460,7 @@ class ApiController extends \Illuminate\Routing\Controllers\Controller
 	//
 	private function _method_not_allowed()
 	{
-		return $this->api_response(array(), 0, array('system' => array('Method not allowed.')));
+		return $this->api_response([], 0, [ 'system' => [ 'Method not allowed.' ] ]);
 	}
 	
 	//
