@@ -111,8 +111,16 @@ class BasicModel
 	//
 	public static function set_or_where_in($col, $list)
 	{
-		self::get_query()->or_where_in($col, $list);
+		self::get_query()->orWhereIn($col, $list);
 	}
+	
+	//
+	// Set Where In
+	//
+	public static function set_where_in($col, $list)
+	{
+		self::get_query()->whereIn($col, $list);
+	}	
 	
 	//
 	// Set Columns to select.
