@@ -10,126 +10,204 @@
 
 namespace Cloudmanic\WarChest\Libraries;
 
-use \Users as Users;
-use Laravel\Hash as Hash;
-use Laravel\Input as Input;
-use Laravel\Session as Session;
-use Laravel\URI as URI;
-use Laravel\URL as URL;
-use Laravel\Redirect as Redirect;
-use Laravel\Response as Response;
-use Laravel\Config as Config;
+use \Users;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Input;
+use Cloudmanic\WarChest\Models\Accounts\Accounts;
+use Cloudmanic\WarChest\Models\Accounts\OauthSess;
 
 class CloudAuth
 {
 	public static $account = null;
+	public static $error = '';
 	
 	//
-	// Authenticate this session. Set the "Me" object if 
+	// Authenicate an API call. Set the "Me" object if 
 	// this authentication was a success.
 	//
-	public static function sessioninit()
-	{				
-		// See if we have passed in a access_token and an account id.
+	public static function apiinit()
+	{		
+		// Setup vars.
+		$access_token = null;
+		$account_id = null;
+			
+		// First we see if we have passed in access token
+		// and account_id. If not we check for a session.
 		if(Input::get('access_token') && Input::get('account_id'))
 		{
 			$access_token = Input::get('access_token');
 			$account_id = Input::get('account_id');
-		} else
+			App::set('connection', 'access_token');
+		} else if(Session::has('access_token') && Session::has('account_id'))
 		{
-			// See if we have a session. If Not do something about it.
-			if((! Session::get('AccountId')) || (! Session::get('AccessToken')))
+			$access_token = Session::get('access_token');
+			$account_id = Session::get('account_id');
+			App::set('connection', 'web');			
+		} else if(isset($_COOKIE[Config::get('session.cookie') . '-ci']))
+		{
+			// NOTE: We only check for CI sessions on API calls (aka ajaxs calls from 
+			// the CI app). In a normal controller we just use the sessioninit flow.
+		
+			// Check to see if we have a session.
+			if($ci_sess = static::_get_ci_session())
 			{
-				die(header('location: ' . Config::get('site.login_url')));
-			} 
-			
-			$access_token = Session::get('AccessToken');
-			$account_id = Session::get('AccountId');
+				$access_token = $ci_sess['access_token'];
+				$account_id = $ci_sess['account_id'];
+				App::set('connection', 'web');
+			} else
+			{
+				static::$error = 'failed access_token (api): no session found.';
+				return false;				
+			}	
+		} else 
+		{
+			static::$error = 'failed access_token (api): no session found.';
+			return false;			
 		}
 
-		// Is this a multi tenant setup? If so set the account.
-		if(Config::get('cloudmanic.account'))
+		// Validate and get the user based on the access_token / account_id
+		if(! static::validate_access_token($access_token, $account_id))
 		{
-			if(! self::$account = \Accounts::get_by_id($account_id))
-			{
-				$data = array('status' => 0, 'errors' => array());
-				$data['errors'][] = 'Account not found.';
-				return \Laravel\Response::json($data);		
-			}
-		}
-		
-		// Validate the access_token
-		if(! $user = Users::get_by_access_token($access_token))
-		{
-			$data = array('status' => 0, 'errors' => array());
-			$data['errors'][] = 'Access token not valid.';
-			return \Laravel\Response::json($data);	
-		} else
-		{
-			self::_do_user($user);
-		}
-	} 
-	
-	//
-	// Logout.
-	//
-	public static function logout()
-	{
-		Session::flush();
-	}
-	
-	//
-	// Authenicate a session.
-	//
-	public static function auth($email, $pass)
-	{	
-		// Get user by email.
-		if(! $user = Users::get_by_email($email))
-		{	
+			static::$error = 'validate_access_token (api): failed to validate.';
 			return false;
 		}
 		
-		// Make sure the password is correct.
-		if(Hash::check($pass, $user['UsersPassword']))
-		{
-			self::_do_user($user);
-			Session::put('AccessToken', Users::get_access_token($user['UsersId']));
-		
-			// Get the default AccountId
-			\AcctsUsersLu::set_col('AcctsUsersLuUserId', $user['UsersId']);
-			\AcctsUsersLu::set_order('AcctsUsersLuAcctId');
-			\AcctsUsersLu::set_limit(1);
-			$lp = \AcctsUsersLu::get();
-			
-			// Make sure we have at least one account.
-			if(! isset($lp[0]))
-			{
-				return false;
-			}
+		// Set last activity
+		static::set_last_activity();
 
-			// Set default account
-			Session::put('AccountId', $lp[0]['AcctsUsersLuAcctId']);
+		// If we made it this far we know we are good.
+		return true;
+	} 
+	
+	//
+	// Set last activity.
+	//
+	public static function set_last_activity()
+	{
+		// Update the user last activty.	
+		$q = [ 'UsersLastActivity' => date('Y-m-d G:i:s') ];
+		Users::update($q, Me::get('UsersId'));
 		
-			return true;
-		} 
-		
-		return false;
+		// Here we log the application usage. Just update the timestamp
+		// in the applications database of the last time this app was accessed.
+		$r = [ 'AccountsLastActivity' => $q['UsersLastActivity'] ];
+		Accounts::update($r, Me::get_account_id());
 	}
 	
 	//
-	// Setup the user. Set the "Me" object and anything else that has to 
-	// happen when a user logs in.
+	// Validate the access token and set the "Me" object.
 	//
-	private static function _do_user($user)
-	{		
-		// Set the user.
-		unset($user['UsersPassword']);	
-		Me::set($user);
+	public static function validate_access_token($access_token, $account_id)
+	{	
+		// Make sure the access token is still valid.
+		OauthSess::set_col('OauthSessStage', 'Granted');
+		OauthSess::set_col('OauthSessTokenExpires', time(), '>');
+		OauthSess::set_col('OauthSessToken', $access_token);
+		if(! $sess = OauthSess::get())
+		{
+			Session::flush();
+			return false;
+		}
 		
-		// Set the account.
-		$account_id = Session::get('AccountId');
-		Me::set_account(\Accounts::get_by_id($account_id));
-	}
+		// Make sure this user still has access to the account being requested.
+		if($sess[0]['UsersAccountId'] != $account_id)
+		{
+			Session::flush();
+			return false;			
+		}
+		
+/*
+		AcctUsersLu::set_col('AcctUsersLuUserId', $sess[0]['OauthSessUserId']);
+		AcctUsersLu::set_col('AcctUsersLuAcctId', $account_id);
+		if(! $lu = AcctUsersLu::get())
+		{
+			Session::flush();
+			return false;
+		}
+*/
+		
+		// Make sure this is still a valid user.
+		if(! $user = Users::get_by_id($sess[0]['OauthSessUserId']))
+		{
+			Session::flush();
+			return false;
+		}
+		
+		// Make sure the account is still active.
+		if(! $account = Accounts::get_by_id($account_id))
+		{
+			Session::flush();
+			return false;
+		}
+		
+		// Set the "Me" Object.		
+		$user['access_token'] = $access_token;
+		Me::set($user);
+		Me::set_account($account);
+		
+		// If we made it this far we are good.
+		return true;
+	}	
+	
+	// -------------------- Private Helper Functions ------------- //
+	
+	//
+	// Check to see if we have a session on a Codeigniter app. 
+	//
+	private static function _get_ci_session()
+	{
+		if(isset($_COOKIE[Config::get('session.cookie') . '-ci']))
+		{
+			$ci = unserialize($_COOKIE[Config::get('session.cookie') . '-ci']);
+	
+			if(isset($ci['session_id']))
+			{
+				$ci_sess = $ci['session_id'];
+				
+				// Query the database and get the session data.
+				if($sess = DB::table('CiSessions')->where('session_id', '=', $ci_sess)->first())
+				{
+					$user_data = unserialize($sess->user_data);
+					
+					// Look in a few places for the access token.
+					if(isset($user_data['AccessToken']))
+					{
+						$access_token = $user_data['AccessToken'];
+					} 
+					
+					if(isset($user_data['LoggedIn']) && isset($user_data['LoggedIn']['AccessToken']))
+					{
+						$access_token = $user_data['LoggedIn']['AccessToken'];					
+					}
+					
+					if(isset($user_data['LoggedIn']) && isset($user_data['LoggedIn']['UsersAccessToken']))
+					{
+						$access_token = $user_data['LoggedIn']['UsersAccessToken'];					
+					}
+					
+					// Grab the account id.
+					if(isset($user_data['AccountsId']))
+					{
+						$account_id = $user_data['AccountsId'];
+					}
+					
+					// Return the access token and account id.
+					if(isset($account_id) && isset($access_token))
+					{
+						return [
+							'account_id' => $account_id,
+							'access_token' => $access_token
+						];
+					}
+				}
+			}
+		}
+		
+		// If we made it this far we have no session.
+		return false;
+	}	
 }
 
 /* End File */

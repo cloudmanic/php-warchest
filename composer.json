@@ -1,7 +1,16 @@
 {
-    "name": "cloudmanic/php-warchest",
-    "version": "1.0.0",
-    "autoload": {
-        "psr-0": {"Cloudmanic\\WarChest": "src/"}
-    }
+	"name": "cloudmanic/php-warchest",
+	
+	"minimum-stability": "dev",
+	
+	"version": "2.0.0",
+	
+	"require": {
+	  "rackspace/php-opencloud": "dev-master",
+	  "pda/pheanstalk": "dev-master"
+	},
+	
+	"autoload": {
+	    "psr-0": {"Cloudmanic\\WarChest": "src/"}
+	}
 }
