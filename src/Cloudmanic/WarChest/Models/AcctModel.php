@@ -23,8 +23,17 @@ class AcctModel
 	protected static $query = null;
 	protected static $_extra = true;
 	private static $_with = array();
+	protected static $_is_api = false;	
 	
 	// ------------------------ Setters ------------------------------ //
+
+	//
+	// Set API call.
+	//
+	public static function set_api($action)
+	{
+		static::$_is_api = $action;
+	}
 
 	//
 	// Make it so it does not load the other models.
