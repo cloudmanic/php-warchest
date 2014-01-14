@@ -10,9 +10,10 @@
 
 namespace Cloudmanic\WarChest\Models;
 
-use Illuminate\Support\Facades\DB;
 use \Config;
-use Cloudmanic\WarChest\Libraries\Me;
+use Illuminate\Support\Facades\DB as DB;
+use Cloudmanic\WarChest\Libraries\Me as Me;
+use Cloudmanic\WarChest\Models\DeleteLog as DeleteLog;
 
 class AcctModel
 {	
@@ -296,7 +297,7 @@ class AcctModel
 		// Do we add this to the delete log.
 		if(static::$delete_log)
 		{
-			\DeleteLog::insert(array(
+			DeleteLog::insert(array(
 				'DeleteLogTable' => $table,
 				'DeleteLogTableId' => $id
 			));
