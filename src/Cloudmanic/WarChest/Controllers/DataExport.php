@@ -10,6 +10,7 @@
 namespace Cloudmanic\WarChest\Controllers;
 
 use \DB;
+use \App;
 use \Input;
 use \Config;
 use Cloudmanic\WarChest\Models\DeleteLog;
@@ -34,7 +35,7 @@ class DataExport extends ApiController
 		$name = Config::get('site.data_export.name');
   
 	  // Include the DBInfo database first to avoid race conditions.
-	  $data['DbInfo'] = array('DbInfoVersion' => $version, 'DbInfoLastSynced' => date('Y-m-d H:i:s'));
+	  $data['DbInfo'] = [ 'DbInfoVersion' => $version, 'DbInfoLastSynced' => date('Y-m-d H:i:s') ];
   
 	  // Loop through the different accounts.
 	  $acct = Me::get_account();
@@ -46,6 +47,14 @@ class DataExport extends ApiController
 			// Loop through the tables and just get the data that has changed.  
 		  foreach($tables AS $key => $row)
 		  {
+				// We short cut the data getting part by calling an export function in the model.
+				if(isset($row['table']) && isset($row['model']) && isset($row['export']) && $row['export'])
+				{
+					$data[$row['table']] = App::make($row['model'])->set_since($timestamp)->export();
+					continue;
+				}
+		  
+				// Deal with models.
 		  	if($row['model'])
 				{	
 					// Make things faster because we are not doing all the sub queries.
@@ -63,16 +72,6 @@ class DataExport extends ApiController
 				} else if((! $row['model']) && ($row['table'] != 'DbInfo') && ($row['table'] != 'PostQueue'))
 		    {
 					$data[$row['table']] = [];
-/*
-		    	echo $row['table'];
-			    // Get data the old fashion way.
-			    $data = DB::table($row['table'])->where('', '', '<=')->get();
-			    foreach($data AS $key2 => $row2)
-			    {
-				    $data[$key2] = (array) $row2;
-			    }
-		    	$data[$row['table']] = $this->_set_since_data($d, $row['table'], $row['keys']);
-*/
 		    }
 		  }
 		  

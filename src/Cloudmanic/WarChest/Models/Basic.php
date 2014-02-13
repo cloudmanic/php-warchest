@@ -16,7 +16,8 @@ class Basic
 {	
 	public $table = '';
 	public $connection = 'mysql';
-	public $joins = null;	
+	public $joins = null;
+	public $export_cols = [];		
 	protected $db = null;	
 	protected $_extra = false;		
 	protected $_is_api = false;	
@@ -45,6 +46,7 @@ class Basic
 	public function set_api($action = true)
 	{
 		$this->_is_api = $action;
+	 	return $this;		
 	}	
 	
 	//
@@ -53,6 +55,7 @@ class Basic
 	public function set_join($table, $left, $right)
 	{
 		$this->db->join($table, $left, '=', $right);
+	 	return $this;		
 	}		
 	
 	//
@@ -61,6 +64,7 @@ class Basic
 	public function set_no_extra()
 	{
 		$this->_extra = false;
+	 	return $this;		
 	}
 	
 	//
@@ -69,6 +73,7 @@ class Basic
 	public function set_extra()
 	{
 		$this->_extra = true;
+	 	return $this;		
 	}
  
  	//
@@ -78,6 +83,7 @@ class Basic
  	{
 	 	$stamp = date('Y-m-d H:i:s', strtotime($timestamp));
 	 	$this->db->where($this->table . 'UpdatedAt', '>=', $stamp);
+	 	return $this;
  	}
 
 	//
@@ -86,6 +92,7 @@ class Basic
 	public function set_limit($limit)
 	{
 		$this->db->take($limit);
+	 	return $this;		
 	}	
 	
 	//
@@ -94,6 +101,7 @@ class Basic
 	public function set_offset($offset)
 	{
 		$this->db->skip($offset);
+	 	return $this;
 	}	
 	
 	//
@@ -102,6 +110,7 @@ class Basic
 	public function set_order($order, $sort = 'desc')
 	{
 		$this->db->orderBy($order, $sort);
+	 	return $this;		
 	}	
 	
 	//
@@ -110,6 +119,7 @@ class Basic
 	public function set_group($group)
 	{
 		$this->db->groupBy($group);
+	 	return $this;		
 	}	
 	
 	//
@@ -118,6 +128,7 @@ class Basic
 	public function set_col($key, $value, $action = '=')
 	{
 		$this->db->where($key, $action, $value);
+	 	return $this;		
 	}
 	
 	//
@@ -126,6 +137,7 @@ class Basic
 	public function set_or_col($key, $value)
 	{
 		$this->db->orWhere($key, '=', $value);
+	 	return $this;		
 	}
 	
 	//
@@ -134,6 +146,7 @@ class Basic
 	public function set_or_where_in($col, $list)
 	{
 		$this->db->orWhereIn($col, $list);
+	 	return $this;		
 	}
 	
 	//
@@ -142,6 +155,7 @@ class Basic
 	public function set_where_in($col, $list)
 	{
 		$this->db->whereIn($col, $list);
+	 	return $this;		
 	}	
 	
 	//
@@ -150,6 +164,7 @@ class Basic
 	public function set_select($selects)
 	{
 		$this->db->select($selects);
+	 	return $this;		
 	}	
 	
 	//
@@ -158,10 +173,28 @@ class Basic
 	public function set_search($str)
 	{
 		// Place holder we should override this.
+	 	return $this;
 	}
 	
 	
 	// ------------------------ Actions ------------------------------ //	
+	
+	//
+	// Export Data. We use this when we are going to dump an entire table or something.
+	// We do not do not call format_get. We do not apply any joins. Just the raw data.
+	// 
+	public function export()
+	{
+		$data = [];	
+	
+		// Query
+		$data = $this->db->get();
+		
+		// Convert to an array because we like arrays better.
+		$data = $this->_obj_to_array($data);
+		
+		return $data;
+	}
 	
 	//
 	// Get...
