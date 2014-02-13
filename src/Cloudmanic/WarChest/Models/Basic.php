@@ -176,6 +176,15 @@ class Basic
 	 	return $this;
 	}
 	
+	// ------------------------ Getters ------------------------------ //	
+	
+	//
+	// Get the export columns.
+	//
+	public function get_export_cols()
+	{
+		return $this->export_cols;
+	}
 	
 	// ------------------------ Actions ------------------------------ //	
 	
@@ -186,6 +195,12 @@ class Basic
 	public function export()
 	{
 		$data = [];	
+	
+		// Return only selective data.
+		if(count($this->export_cols))
+		{
+			$this->db->select($this->export_cols);
+		}
 	
 		// Query
 		$data = $this->db->get();
