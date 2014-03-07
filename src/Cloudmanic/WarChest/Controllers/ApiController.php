@@ -328,7 +328,7 @@ class ApiController extends \Illuminate\Routing\Controller
 			break;
 			
 			default:
-				return Response::json($rt);
+				return Response::json($rt)->header('Content-Length', strlen(json_encode($rt)));
 			break;
 		}
 	}
