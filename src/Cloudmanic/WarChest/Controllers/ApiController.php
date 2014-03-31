@@ -262,7 +262,21 @@ class ApiController extends \Illuminate\Routing\Controller
 			$rt['limit'] = (\Input::get('limit')) ? \Input::get('limit') : 0;
 			$rt['range_start'] = 1;
 			$rt['range_end'] = $rt['count'];
-			$rt['hash'] = md5(json_encode($data));
+			$rt['pages'] = 0;
+			$rt['current_page'] = 0;			
+			$rt['hash'] = md5(json_encode($data));			
+			
+			// Figure out how many pages their are.
+			if($rt['limit'] && $rt['total'])
+			{
+				$rt['pages'] = ($rt['limit'] < $rt['total']) ? ceil($rt['total'] /  $rt['limit']) : 0;
+			} 
+			
+			// Figure out what page we are on.
+			if($rt['limit'] && $rt['offset'])
+			{
+				$rt['current_page'] = floor($rt['offset']	/ $rt['limit']);			
+			}
 			
 			// Get the pageination.
 			if($rt['limit'])
