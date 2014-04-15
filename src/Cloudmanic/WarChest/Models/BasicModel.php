@@ -16,6 +16,7 @@ use \Eloquent as Eloquent;
 
 class BasicModel extends Eloquent
 {	
+	public static $connection = null;
 	public static $joins = null;
 	public static $with = array();
 	public static $datetimes = array();
@@ -271,6 +272,15 @@ class BasicModel extends Eloquent
 	{
 		if(is_null(self::$query))
 		{
+			$old_connection = Config::get('database.default');
+		
+			if(is_null(static::$connection))
+			{
+				static::$connection = Config::get('database.default');
+			} 
+		
+			Config::set('database.default', static::$connection);
+			
 			$table = explode('\\', get_called_class());
 			self::$table = end($table);
 			self::$query = new \Laravel\Database\Eloquent\Query(self::$table);
