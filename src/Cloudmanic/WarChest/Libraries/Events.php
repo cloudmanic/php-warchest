@@ -9,13 +9,22 @@
 
 namespace Cloudmanic\WarChest\Libraries;
 
-use \Config;
 use Illuminate\Http\Request;
 
 class Events
 {
+	private static $_queue = 'centcom';
+	private static $_queue_ip = '127.0.0.1';
 	private static $_appcode = null;
 	private static $_account_id = null;
+
+	//
+	// Set the queue IP address.
+	//
+	public static function set_queue_ip($ip)
+	{
+		static::$_queue_ip = $ip;
+	}
 
 	//
 	// Set the application code.
@@ -40,10 +49,16 @@ class Events
 	{
 		$pheanstalk = new \Pheanstalk_Pheanstalk('127.0.0.1');
 		
+		// We can override the account id. 
+		if(is_null(static::$_account_id))
+		{
+			static::$_account_id = Me::get_account_id();
+		}		
+		
 		$data = [
 			'time' => time(),
 			'name' => $model, 
-			'AccountsId' => Me::get_account_id()
+			'AccountsId' => static::$_account_id
 		];
 		
 		$pheanstalk->useTube('realtime')->put(json_encode($data));
@@ -63,12 +78,12 @@ class Events
 		}
 	
 		// Event data.
-		$event = array(
+		$event = [
 			'EventsName' => trim($event),
 			'IpAddressesName' => (isset($_SERVER["REMOTE_ADDR"])) ? $_SERVER["REMOTE_ADDR"] : '127.0.0.1',
 			'EventLogAccountId' => Me::get_account_id(),
 			'Props' => static::_merge_common($props)
-		);
+		];
 		
 		// The application code is per platform.
 		if(! is_null(static::$_appcode))
@@ -77,6 +92,15 @@ class Events
 		} else if(class_exists('\Config'))
 		{
 			$event['ApplicationsCode'] = \Config::get('site.app_code');
+		}
+		
+		// Get the ip address of the queue server. First we check to see if the 
+		// default queue_ip has not already changed via set_queue_ip() then
+		// we check to see if this is an instance of Laravel. If so we 
+		// can pull the ip address from site.centom_queue_ip.
+		if((self::$_queue_ip == '127.0.0.1') && class_exists('\Config') && \Config::get('site.centom_queue_ip'))
+		{
+			self::$_queue_ip = \Config::get('site.centom_queue_ip');
 		}
 		
 		// We can override the account id. 
@@ -92,8 +116,8 @@ class Events
 		];
 	
 		// Setup and send the message to the message queue.
-		$pheanstalk = new \Pheanstalk_Pheanstalk('127.0.0.1');
-		$pheanstalk->useTube(Config::get('site.centcom_queue'))->put(json_encode($msg));
+		$pheanstalk = new \Pheanstalk_Pheanstalk(self::$_queue_ip);
+		$pheanstalk->useTube(self::$_queue)->put(json_encode($msg));
 	
 		return true;
 	}
