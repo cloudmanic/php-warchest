@@ -103,6 +103,12 @@ class Events
 			self::$_queue_ip = \Config::get('site.centom_queue_ip');
 		}
 		
+		// Setup the queue we use.
+		if(class_exists('\Config') && \Config::get('site.centcom_queue'))
+		{
+			self::$_queue = \Config::get('site.centcom_queue');
+		}		
+		
 		// We can override the account id. 
 		if(! is_null(static::$_account_id))
 		{
