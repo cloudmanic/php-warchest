@@ -308,7 +308,7 @@ class Basic
 	//
 	public function get_last_query()
 	{
-		return end(DB::profile());
+		return end(DB::getQueryLog());
 	}	
 }
 

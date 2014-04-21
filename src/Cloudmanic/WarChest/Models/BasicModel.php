@@ -33,6 +33,31 @@ class BasicModel
 	{
 		static::$_is_api = $action;
 	}
+	
+ 	//
+ 	// Set since a particular date.
+ 	//
+ 	public static function set_since($timestamp)
+ 	{
+	 	$stamp = date('Y-m-d H:i:s', strtotime($timestamp));
+	 	self::get_query()->where(static::$_table . 'UpdatedAt', '>=', $stamp);
+ 	}	
+
+	//
+	// Make it so it does not load the other models.
+	//
+	public static function set_no_extra()
+	{
+		self::$_extra = false;
+	}
+	
+	//
+	// We want all the extra data.
+	//
+	public static function set_extra()
+	{
+		self::$_extra = true;
+	}	
 
 	//
 	// Set connection.
@@ -69,9 +94,9 @@ class BasicModel
 	//
 	// Set Column.
 	//
-	public static function set_col($key, $value)
+	public static function set_col($key, $value, $action = '=')
 	{
-		self::get_query()->where($key, '=', $value);
+		self::get_query()->where($key, $action, $value);
 	}
 	
 	//
@@ -89,6 +114,14 @@ class BasicModel
 	{
 		self::get_query()->or_where_in($col, $list);
 	}
+	
+	//
+	// Set Where In
+	//
+	public static function set_where_in($col, $list)
+	{
+		self::get_query()->whereIn($col, $list);
+	}	
 	
 	//
 	// Set Columns to select.
@@ -121,14 +154,6 @@ class BasicModel
 	{
 		self::$_with = array();
 	}
-	
-	//
-	// Set extra
-	//
-	public static function set_extra($extra)
-	{
-		static::$_extra = $extra;
-	}	
 	
 	//
 	// Set search.
