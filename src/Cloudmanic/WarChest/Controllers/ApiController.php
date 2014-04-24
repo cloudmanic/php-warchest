@@ -23,6 +23,7 @@ class ApiController extends \Laravel\Routing\Controller
 	public $model = '';
 	public $not_allowed = array();
 	public $no_auth = false;
+	public $view = '';
 	public $before_filter = 'api_auth';
 	public $rules_create = array();
 	public $rules_update = array();
@@ -244,6 +245,16 @@ class ApiController extends \Laravel\Routing\Controller
 			
 			case 'data':
 				return $rt;
+			break;
+			
+			case 'view':
+				if($this->view)
+				{
+					return \View::make($this->view, $rt);
+				} else
+				{
+					return 'no view set';
+				}
 			break;
 			
 			default:
