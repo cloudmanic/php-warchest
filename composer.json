@@ -6,7 +6,7 @@
 	"version": "1.0.0",
 	
 	"require": {
-	  "rackspace/php-opencloud": "dev-master"
+		"rackspace/php-opencloud": "dev-working"
 	},
 	
 	"autoload": {
