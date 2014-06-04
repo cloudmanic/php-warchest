@@ -23,9 +23,10 @@ class ApiController extends \Illuminate\Routing\Controller
 	public $no_auth = false;
 	public $accept_update = null;
 	public $accept_insert = null;
-	public $rules_create = array();
-	public $rules_update = array();
-	public $rules_message = array();
+	public $rules_create = [];
+	public $rules_update = [];
+	public $rules_message = [];
+	public $error_replace = [];	
 	
 	//
 	// Construct.
@@ -314,7 +315,14 @@ class ApiController extends \Illuminate\Routing\Controller
 			{
 			  if($errors->has($key))
 			  {
-			    $rt['errors'][] = [ 'field' => $key, 'error' => $errors->first($key, ':message') ];
+					// Replace text in an error message.
+					if(isset($this->error_replace[$key]))
+					{
+						$msg = $errors->first($key, ':message');
+						$msg = str_ireplace($key, $this->error_replace[$key], $msg);
+					}
+			  
+			    $rt['errors'][] = [ 'field' => $key, 'error' => $msg ];
 			  }
 			}
 		}

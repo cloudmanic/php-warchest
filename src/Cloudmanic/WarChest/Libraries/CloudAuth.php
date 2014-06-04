@@ -79,7 +79,7 @@ class CloudAuth
 
 		// If we made it this far we know we are good.
 		return true;
-	} 
+	} 	
 	
 	//
 	// Set last activity.
