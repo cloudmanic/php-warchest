@@ -309,6 +309,9 @@ class AcctModel
 	//
 	public static function delete_all()
 	{
+		// We do this so we can set the table.
+		self::get_query();
+	
 		// Set the account.
 		self::set_col(self::$_table . 'AccountId', Me::get_account_id());
 	

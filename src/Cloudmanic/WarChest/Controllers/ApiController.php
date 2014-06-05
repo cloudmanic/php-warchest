@@ -315,10 +315,11 @@ class ApiController extends \Illuminate\Routing\Controller
 			{
 			  if($errors->has($key))
 			  {
+					$msg = $errors->first($key, ':message');
+			  
 					// Replace text in an error message.
 					if(isset($this->error_replace[$key]))
 					{
-						$msg = $errors->first($key, ':message');
 						$msg = str_ireplace($key, $this->error_replace[$key], $msg);
 					}
 			  
