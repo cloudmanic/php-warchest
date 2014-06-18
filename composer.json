@@ -7,7 +7,7 @@
 	
 	"require": {
 	  "rackspace/php-opencloud": "dev-working",
-	  "pda/pheanstalk": "dev-master",
+	  "pda/pheanstalk": "2.0.*",
 	  "natxet/CssMin": "dev-master"
 	},
 	
