@@ -26,7 +26,8 @@ class ApiController extends \Illuminate\Routing\Controller
 	public $rules_create = [];
 	public $rules_update = [];
 	public $rules_message = [];
-	public $error_replace = [];	
+	public $error_replace = [];
+	public $filtered_cols = [];	
 	
 	//
 	// Construct.
@@ -65,6 +66,21 @@ class ApiController extends \Illuminate\Routing\Controller
 		$m = $this->model;
 		$m::set_api(true);		
 		$data = $m::get();
+		
+		// Do we filter any columns.
+		if($this->filtered_cols)
+		{	
+			foreach($data AS $key => $row)
+			{						
+			  foreach($row AS $key2 => $row2)
+			  {
+			    if(in_array($key2, $this->filtered_cols))
+			    {
+			    	unset($data[$key][$key2]);
+			    }
+			  }
+			}
+		}			
 		
 		// Store the cache of this response
 		if($this->cached)
@@ -111,7 +127,19 @@ class ApiController extends \Illuminate\Routing\Controller
 			{
 				Cache::put($hash, $data, $this->cached_time);
 			}
-		
+			
+			// Do we filter any columns.
+			if($this->filtered_cols)
+			{			
+				foreach($data AS $key => $row)
+				{
+				  if(in_array($key, $this->filtered_cols))
+				  {
+				  	unset($data[$key]);
+				  }
+				}
+			}			
+
 			return $this->api_response($data);
 		} else
 		{
