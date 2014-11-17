@@ -51,9 +51,9 @@ class BasicModel extends Eloquent
 	//
 	// Set Column.
 	//
-	public static function set_col($key, $value)
+	public static function set_col($key, $value, $syb = '=')
 	{
-		self::get_query()->where($key, '=', $value);
+		self::get_query()->where($key, $syb, $value);
 	}
 	
 	//
