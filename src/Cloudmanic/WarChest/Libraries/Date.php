@@ -56,7 +56,7 @@ class Date
 		
 		if($days > 330) 
 		{
-			$data = "long time ago";
+			$data = date($format, strtotime($start));
 		} else if($days > 35)
 		{
 			$data = ceil($days / 30) . " $mo_text";
