@@ -35,7 +35,7 @@ class Date
 		$start, $end = 'now', $mo_text = "Mo. Ago", $mo_one_text = "Month Ago",
 		$d_text = 'Days Ago', $d_one_text = "Day Ago", $m_text = 'Min. Ago',
 		$m_one_text = '1 Min. Ago', $h_one_text = "1 Hour Ago",
-		$h_text = 'Hours Ago', $format = 'n/j/Y')
+		$h_text = 'Hours Ago', $format = 'M j, Y')
 	{
 		// Calculate days / mins.
 		$start_ts = strtotime($start);
