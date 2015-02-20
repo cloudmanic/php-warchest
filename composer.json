@@ -6,7 +6,6 @@
 	"version": "2.0.0",
 	
 	"require": {
-	  "rackspace/php-opencloud": "dev-working",
 	  "pda/pheanstalk": "2.0.*",
 	  "natxet/CssMin": "dev-master"
 	},
