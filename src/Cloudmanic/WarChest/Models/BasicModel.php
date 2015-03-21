@@ -251,6 +251,9 @@ class BasicModel
 	//
 	public static function update($data, $id)
 	{	
+		// Make sure we have a query started.
+		self::get_query();		
+		
 		// Add update at date
  		if(! isset($data[self::$_table . 'UpdatedAt'])) 
  		{
