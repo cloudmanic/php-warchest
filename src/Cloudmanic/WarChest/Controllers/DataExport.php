@@ -36,6 +36,9 @@ class DataExport extends ApiController
   
 	  // Include the DBInfo database first to avoid race conditions.
 	  $data['DbInfo'] = [ 'DbInfoVersion' => $version, 'DbInfoLastSynced' => date('Y-m-d H:i:s') ];
+	  
+	  // Mapping
+	  $data['ColMapping'] = [];
   
 	  // Loop through the different accounts.
 	  $acct = Me::get_account();
@@ -71,7 +74,8 @@ class DataExport extends ApiController
 					$data[$row['table']] = $this->_set_since_data($d, $row['table'], $row['keys']);
 				} else if((! $row['model']) && ($row['table'] != 'DbInfo') && ($row['table'] != 'PostQueue'))
 		    {
-					$data[$row['table']] = [];
+          $d = $row['table']::export($timestamp, $row['noextra']);
+					$data[$row['table']] = $this->_set_since_data($d, $row['table'], $row['keys']);
 		    }
 		  }
 		  
@@ -86,9 +90,15 @@ class DataExport extends ApiController
 		  }
 		}
 
+    // Do the column mapping.
+    if(Input::get('colmap') && (Input::get('colmap') == 'true'))
+    {
+      $this->_do_col_mapping($data);
+    }
+    
 		// Set account back.
 		Me::set_account($acct);
-	  
+
 		// Record the action.
 		Events::send('data-since');
 	  
@@ -226,6 +236,51 @@ class DataExport extends ApiController
 	}
 	
 	// --------------------- Helper Functions ----------------------------------- //
+	
+	//
+	// Do a column mapping.
+	//
+	private function _do_col_mapping(&$data)
+	{
+    $count = 0;
+    $skip = [ 'DbInfo', 'ColMapping' ];
+    
+    foreach($data AS $key => $row)
+    {
+      if(in_array($key, $skip))
+      {
+        continue;
+      }
+      
+      if(! isset($row[0]))
+      {
+        continue;
+      }
+      
+      // Do column mapping
+      foreach(array_keys($row[0]) AS $key2 => $row2)
+      {
+        if(isset($data['ColMapping'][$row2]))
+        {
+          continue;
+        }
+        
+        $data['ColMapping'][$row2] = 'c' . $count;
+        $count++; 
+      }
+      
+      // Rewrite the column names.
+      foreach($row AS $key2 => $row2)
+      {
+        foreach($row2 AS $key3 => $row3)
+        {
+          $data[$key][$key2][$data['ColMapping'][$key3]] = $row3;
+          unset($data[$key][$key2][$key3]);
+        }
+      }
+    }
+	
+	}
 	
 	//
 	// Get list of accounts for this user.

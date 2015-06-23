@@ -110,6 +110,14 @@ class AcctModel
 	}
 	
 	//
+	// Set Where In
+	//
+	public static function set_where_in($col, $list)
+	{
+		self::get_query()->whereIn($col, $list);
+	}	
+	
+	//
 	// Set Columns to select.
 	//
 	public static function set_select($selects)
