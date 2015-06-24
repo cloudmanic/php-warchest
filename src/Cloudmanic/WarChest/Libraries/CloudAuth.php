@@ -88,7 +88,7 @@ class CloudAuth
 	{
 		// Update the user last activty.	
 		$q = [ 'UsersLastActivity' => date('Y-m-d G:i:s') ];
-		Users::update($q, Me::get('UsersId'));
+    DB::table('Users')->where('UsersId', Me::get('UsersId'))->update($q);
 		
 		// Here we log the application usage. Just update the timestamp
 		// in the applications database of the last time this app was accessed.
@@ -129,7 +129,8 @@ class CloudAuth
 */
 		
 		// Make sure this is still a valid user.
-		if(! $user = Users::get_by_id($sess[0]['OauthSessUserId']))
+		$user = (array) DB::table('Users')->where('UsersId', $sess[0]['OauthSessUserId'])->first();
+		if(! $user)
 		{
 			Session::flush();
 			return false;
