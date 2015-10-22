@@ -10,13 +10,15 @@
 
 namespace Cloudmanic\WarChest\Models;
 
-use Illuminate\Support\Facades\DB as DB;
 use \Config as Config;
+use Illuminate\Support\Facades\DB as DB;
+use Cloudmanic\WarChest\Models\DeleteLog as DeleteLog;
 
 class BasicModel
 {	
 	public static $joins = null;
 	public static $_table = null;
+  public static $delete_log = false;
 	private static $_with = array();
 	public static $_connection = 'mysql';
 	protected static $query = null;
@@ -273,9 +275,20 @@ class BasicModel
 		// Make sure we have a query started.
 		self::get_query();
 		
- 		// Delete entry and clear query.
+ 		// Delete entry.
 		self::get_query()->where(self::$_table . 'Id', '=', $id)->delete();
-		self::clear_query();
+		
+		// Do we add this to the delete log.
+		if(static::$delete_log)
+		{
+			DeleteLog::insert([
+				'DeleteLogTable' => self::$_table,
+				'DeleteLogTableId' => $id
+			]);
+		}		
+		
+		// Clear
+		self::clear_query();		
 	}
 	
 	//
