@@ -11,6 +11,7 @@
 namespace Cloudmanic\WarChest\Models;
 
 use \DB as DB;
+use \Input as Input;
 use \Config as Config;
 use \Eloquent as Eloquent;
 use \Cloudmanic\WarChest\Libraries\Me as Me;
@@ -189,7 +190,10 @@ class AcctModel extends Eloquent
 	public static function insert($data)
 	{
 		// Checked checked.
-		$data = self::check_checked($data);
+		if (! Input::get('nocheck'))
+		{
+			$data = self::check_checked($data);
+		} 
 	
 		// Make sure we have a query started.
 		self::get_query();
@@ -215,7 +219,10 @@ class AcctModel extends Eloquent
 	public static function update($data, $id)
 	{	
 		// Checked checked.
-		$data = self::check_checked($data);
+		if (! Input::get('nocheck'))
+		{
+			$data = self::check_checked($data);
+		} 
 	
 		// Make sure we have a query started.
 		self::get_query();
