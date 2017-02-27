@@ -71,6 +71,7 @@ class Events
 	//
 	public static function send($event, $props = array())
 	{
+/*
 		// Log the type of connection in the props.
 		if(App::get('connection'))
 		{
@@ -124,6 +125,7 @@ class Events
 		// Setup and send the message to the message queue.
 		$pheanstalk = new \Pheanstalk_Pheanstalk(self::$_queue_ip);
 		$pheanstalk->useTube(self::$_queue)->put(json_encode($msg));
+*/
 	
 		return true;
 	}
