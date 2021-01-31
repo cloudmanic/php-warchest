@@ -365,7 +365,7 @@ class ApiController extends \Laravel\Routing\Controller
 		}
 		
 		// If we have rules we validate.
-		if(is_array($rules) && (count($rules > 0)))
+		if (is_array($rules) && (count($rules) > 0)) {
 		{
 			// Time to validate.
 			$validation = Validator::make(Input::get(), $rules, $this->rules_message);
