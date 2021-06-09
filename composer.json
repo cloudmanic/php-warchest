@@ -11,7 +11,7 @@
 		"pda/pheanstalk": "dev-master",
 		"rmccue/requests": ">=1.0",
 		"symfony/console": "2.3.*@dev",
-		"natxet/CssMin": "dev-master"
+		"natxet/cssmin": "dev-master"
 	},
 	
 	"autoload": {
