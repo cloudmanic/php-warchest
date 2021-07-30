@@ -330,7 +330,7 @@ class AcctModel extends Eloquent
 	private static function _set_data($data)
  	{
  		$q = array();
- 		$fields = DB::query('SHOW COLUMNS FROM ' . self::$table);
+ 		$fields = DB::query('SHOW COLUMNS FROM `' . self::$table . '`');
  		
  		foreach($fields AS $key => $row)
  		{ 
